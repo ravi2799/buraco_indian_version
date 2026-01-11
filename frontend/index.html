@@ -243,18 +243,87 @@
 
     <!-- Game Over Modal -->
     <div id="game-over-modal" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content game-over-content">
         <h2 id="winner-text">Game Over!</h2>
-        <div class="final-scores">
-          <div class="score-row">
-            <span>Team A:</span>
-            <span id="final-score-a">0</span>
+        
+        <div class="score-cards-container">
+          <!-- Team A Card -->
+          <div class="score-card team-a-card">
+            <div class="score-card-header">
+              <h3>Team A</h3>
+              <div class="total-score" id="total-score-a">0</div>
+            </div>
+            <div class="score-breakdown" id="breakdown-a">
+              <div class="breakdown-row">
+                <span>Meld Points</span>
+                <span class="breakdown-value" id="meld-score-a">0</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Same Rank Burracos</span>
+                <span class="breakdown-value" id="same-rank-a">0 × 100</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Clean Burracos</span>
+                <span class="breakdown-value" id="clean-burraco-a">0 × 200</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Dirty Burracos</span>
+                <span class="breakdown-value" id="dirty-burraco-a">0 × 200</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Going Out Bonus</span>
+                <span class="breakdown-value" id="going-out-a">0</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Pozzetto Bonus</span>
+                <span class="breakdown-value" id="pozzetto-a">0</span>
+              </div>
+              <div class="breakdown-row penalty">
+                <span>Hand Penalty</span>
+                <span class="breakdown-value" id="penalty-a">0</span>
+              </div>
+            </div>
           </div>
-          <div class="score-row">
-            <span>Team B:</span>
-            <span id="final-score-b">0</span>
+
+          <!-- Team B Card -->
+          <div class="score-card team-b-card">
+            <div class="score-card-header">
+              <h3>Team B</h3>
+              <div class="total-score" id="total-score-b">0</div>
+            </div>
+            <div class="score-breakdown" id="breakdown-b">
+              <div class="breakdown-row">
+                <span>Meld Points</span>
+                <span class="breakdown-value" id="meld-score-b">0</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Same Rank Burracos</span>
+                <span class="breakdown-value" id="same-rank-b">0 × 100</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Clean Burracos</span>
+                <span class="breakdown-value" id="clean-burraco-b">0 × 200</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Dirty Burracos</span>
+                <span class="breakdown-value" id="dirty-burraco-b">0 × 200</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Going Out Bonus</span>
+                <span class="breakdown-value" id="going-out-b">0</span>
+              </div>
+              <div class="breakdown-row">
+                <span>Pozzetto Bonus</span>
+                <span class="breakdown-value" id="pozzetto-b">0</span>
+              </div>
+              <div class="breakdown-row penalty">
+                <span>Hand Penalty</span>
+                <span class="breakdown-value" id="penalty-b">0</span>
+              </div>
+            </div>
           </div>
         </div>
+
         <button id="back-to-lobby-btn" class="primary-btn">Back to Lobby</button>
       </div>
     </div>

@@ -9,11 +9,23 @@ import { calculateCardsValue } from './Deck.js';
  */
 const BONUSES = {
     CLEAN_BURRACO: 200,
-    DIRTY_BURRACO: 100,
-    SEMI_CLEAN_BURRACO: 150,
+    DIRTY_BURRACO: 200,
+    SEMI_CLEAN_BURRACO: 200,
+    SAME_RANK_BURRACO: 100,  // All same rank (e.g., 3333333)
     GOING_OUT: 50,
     POZZETTO_BONUS: 50  // +50 for each pozzetto taken
 };
+
+/**
+ * Check if all cards in a meld have the same rank (wild cards are ignored)
+ */
+function isSameRankMeld(cards) {
+    if (cards.length === 0) return false;
+    const nonWildCards = cards.filter(card => card.rank !== 'WILD');
+    if (nonWildCards.length === 0) return false;
+    const firstRank = nonWildCards[0].rank;
+    return nonWildCards.every(card => card.rank === firstRank);
+}
 
 /**
  * Calculate score for a team's melds
@@ -22,14 +34,19 @@ export function calculateMeldScore(melds) {
     let score = 0;
     let cleanBurracos = 0;
     let dirtyBurracos = 0;
+    let sameRankBurracos = 0;
 
     for (const meld of melds) {
         // Card values
         score += calculateCardsValue(meld.cards);
 
-        // Burraco bonuses
+        // Burraco bonuses (mutually exclusive)
         if (meld.isBurraco) {
-            if (meld.isClean) {
+            if (isSameRankMeld(meld.cards)) {
+                // Same rank burraco (e.g., 3333333) - counted separately
+                score += BONUSES.SAME_RANK_BURRACO;
+                sameRankBurracos++;
+            } else if (meld.isClean) {
                 score += BONUSES.CLEAN_BURRACO;
                 cleanBurracos++;
             } else {
@@ -39,7 +56,7 @@ export function calculateMeldScore(melds) {
         }
     }
 
-    return { score, cleanBurracos, dirtyBurracos };
+    return { score, cleanBurracos, dirtyBurracos, sameRankBurracos };
 }
 
 /**
@@ -81,6 +98,7 @@ export function calculateTeamScore(team) {
         handPenalty: calculateHandPenalty(hands),
         cleanBurracos: meldResult.cleanBurracos,
         dirtyBurracos: meldResult.dirtyBurracos,
+        sameRankBurracos: meldResult.sameRankBurracos,
         wentOutBonus: wentOut ? BONUSES.GOING_OUT : 0,
         pozzettoBonus: pozzettoBonus
     };

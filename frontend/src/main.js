@@ -29,8 +29,6 @@ const configJokers = document.getElementById('config-jokers');
 
 // Game over elements
 const winnerText = document.getElementById('winner-text');
-const finalScoreA = document.getElementById('final-score-a');
-const finalScoreB = document.getElementById('final-score-b');
 const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
 
 // State
@@ -143,19 +141,74 @@ async function handleSwapTeam(seat) {
 }
 
 /**
- * Show game over modal
+ * Show game over modal with score breakdown
  */
 function showGameOver(result) {
     gameOverModal.classList.remove('hidden');
 
+    // Set winner text
     if (result.winner === 'tie') {
         winnerText.textContent = "It's a Tie!";
     } else {
         winnerText.textContent = `Team ${result.winner} Wins!`;
     }
 
-    finalScoreA.textContent = result.scores.A;
-    finalScoreB.textContent = result.scores.B;
+    // Highlight winning card
+    const teamACard = document.querySelector('.team-a-card');
+    const teamBCard = document.querySelector('.team-b-card');
+    teamACard.classList.toggle('winner', result.winner === 'A');
+    teamBCard.classList.toggle('winner', result.winner === 'B');
+
+    // Populate Team A breakdown
+    populateTeamBreakdown('a', result.teamDetails?.A, result.scores.A);
+    
+    // Populate Team B breakdown
+    populateTeamBreakdown('b', result.teamDetails?.B, result.scores.B);
+}
+
+/**
+ * Populate score breakdown for a team
+ */
+function populateTeamBreakdown(teamId, details, totalScore) {
+    document.getElementById(`total-score-${teamId}`).textContent = totalScore || 0;
+    
+    if (!details) {
+        // No details available, just show total
+        return;
+    }
+
+    // Meld score (card values)
+    const meldScore = details.meldScore || 0;
+    document.getElementById(`meld-score-${teamId}`).textContent = meldScore;
+
+    // Same Rank Burracos
+    const sameRankCount = details.sameRankBurracos || 0;
+    document.getElementById(`same-rank-${teamId}`).textContent = 
+        sameRankCount > 0 ? `${sameRankCount} × 100 = ${sameRankCount * 100}` : '0';
+
+    // Clean Burracos
+    const cleanCount = details.cleanBurracos || 0;
+    document.getElementById(`clean-burraco-${teamId}`).textContent = 
+        cleanCount > 0 ? `${cleanCount} × 200 = ${cleanCount * 200}` : '0';
+
+    // Dirty Burracos
+    const dirtyCount = details.dirtyBurracos || 0;
+    document.getElementById(`dirty-burraco-${teamId}`).textContent = 
+        dirtyCount > 0 ? `${dirtyCount} × 200 = ${dirtyCount * 200}` : '0';
+
+    // Going Out Bonus
+    const goingOutBonus = details.wentOutBonus || 0;
+    document.getElementById(`going-out-${teamId}`).textContent = 
+        goingOutBonus > 0 ? `+${goingOutBonus}` : '0';
+
+    // Pozzetto Bonus
+    const pozzettoBonus = details.pozzettoBonus || 0;
+    document.getElementById(`pozzetto-${teamId}`).textContent = 
+        pozzettoBonus > 0 ? `+${pozzettoBonus}` : '0';
+
+    // Hand Penalty (negative)
+    const penalty = details.handPenalty || 0;
+    document.getElementById(`penalty-${teamId}`).textContent = penalty;
 }
 
 /**

@@ -708,3 +708,143 @@ input[type="text"]:focus {
 .config-item strong {
   color: var(--gold);
 }
+
+/* =============================================
+   Game Over Score Breakdown Cards
+   ============================================= */
+
+.game-over-content {
+  min-width: 700px;
+  max-width: 90vw;
+}
+
+.game-over-content h2 {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-lg);
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+}
+
+.score-cards-container {
+  display: flex;
+  gap: var(--spacing-lg);
+  justify-content: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.score-card {
+  flex: 1;
+  max-width: 320px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 16px;
+  border: 3px solid var(--wood-brown);
+  overflow: hidden;
+  transition: var(--transition-normal);
+}
+
+.score-card.team-a-card {
+  border-color: #4a90d9;
+}
+
+.score-card.team-b-card {
+  border-color: #d94a4a;
+}
+
+.score-card.winner {
+  border-color: var(--gold);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+  transform: scale(1.02);
+}
+
+.score-card-header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team-a-card .score-card-header {
+  background: linear-gradient(135deg, #4a90d9 0%, #3a7bc8 100%);
+}
+
+.team-b-card .score-card-header {
+  background: linear-gradient(135deg, #d94a4a 0%, #c83a3a 100%);
+}
+
+.score-card-header h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  margin: 0;
+}
+
+.score-card-header .total-score {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.score-breakdown {
+  padding: var(--spacing-md);
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.95rem;
+}
+
+.breakdown-row:last-child {
+  border-bottom: none;
+}
+
+.breakdown-row span:first-child {
+  color: var(--cream-dark);
+}
+
+.breakdown-value {
+  font-weight: 600;
+  color: var(--gold-light);
+  font-family: 'Courier New', monospace;
+}
+
+.breakdown-row.penalty .breakdown-value {
+  color: #ff6b6b;
+}
+
+/* Winner crown animation */
+.score-card.winner .score-card-header::before {
+  content: '👑';
+  font-size: 1.5rem;
+  margin-right: var(--spacing-sm);
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Responsive for smaller screens */
+@media (max-width: 768px) {
+  .game-over-content {
+    min-width: auto;
+    width: 95vw;
+    padding: var(--spacing-md);
+  }
+
+  .score-cards-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .score-card {
+    width: 100%;
+    max-width: 100%;
+  }
+}
