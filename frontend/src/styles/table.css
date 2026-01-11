@@ -45,10 +45,10 @@
 
 /* Status Bar */
 .game-status-bar {
-    display: flex;
+    display: hidden;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: 0px;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 100%);
     border-bottom: 2px solid var(--wood-brown);
     position: relative;
@@ -92,7 +92,9 @@
     background: rgba(0, 0, 0, 0.4);
     padding: var(--spacing-sm) var(--spacing-lg);
     border-radius: 20px;
-    border: 2px solid var(--gold-dark);
+    /* border: 2px solid var(--gold-dark); */
+    text-align: center;
+    padding-right: 50%;
 }
 
 .turn-indicator span {
@@ -102,9 +104,9 @@
 }
 
 .turn-indicator.my-turn {
-    background: rgba(212, 175, 55, 0.2);
-    border-color: var(--gold);
-    animation: pulse 1.5s ease-in-out infinite;
+    /* background: rgba(212, 175, 55, 0.2); */
+    /* border-color: var(--gold); */
+    /* animation: pulse 1.5s ease-in-out infinite; */
 }
 
 /* Game Table Layout - CSS Grid */
@@ -416,6 +418,8 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    transform: scale(0.8);
+    transform-origin: center;
 }
 
 .draw-pile .card-stack {
@@ -507,7 +511,6 @@
     height: 100%;
     position: relative;
     padding: 0;
-    padding-top: 55px;
     /* Space for opponents row */
     margin: 0;
     pointer-events: none;
@@ -526,12 +529,13 @@
     max-height: 100%;
     pointer-events: auto;
     overflow: hidden;
+    border-bottom: 2px solid var(--wood-brown);
 }
 
 /* Specific Zone Styling */
 .team-b-zone {
     border-right: none;
-    border-left: 2px solid rgba(0, 0, 0, 0.2);
+    border-left: 2px solid var(--wood-brown);
 }
 
 #team-a-melds,
@@ -618,13 +622,16 @@
     border-top: 2px solid var(--wood-brown);
     position: relative;
     z-index: 20;
+    display: flex;
+    justify-content: center;
 }
 
 .hand-controls {
     position: absolute;
-    right: 100px;
-    bottom: 80px;
+    right: 80px;
+    bottom: 70px;
     display: flex;
+    flex-direction: column;
     gap: var(--spacing-sm);
     z-index: 30;
 }
@@ -657,7 +664,7 @@
 
 .player-hand {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
     gap: 4px;
     padding: var(--spacing-sm);
@@ -873,7 +880,7 @@
     background: rgba(20, 40, 30, 0.95);
     border: 2px solid rgba(100, 120, 100, 0.4);
     border-radius: 50px;
-    padding: 8px 16px 8px 8px;
+    padding: 2px 4px;
     box-shadow:
         0 4px 15px rgba(0, 0, 0, 0.5),
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -890,8 +897,8 @@
 }
 
 .player-info-badge .badge-avatar {
-    width: 45px;
-    height: 45px;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
     border: 2px solid rgba(100, 150, 200, 0.6);
     object-fit: cover;
@@ -905,15 +912,16 @@
 
 .player-info-badge .badge-info {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
     flex: 1;
     min-width: 0;
 }
 
 .player-info-badge .badge-name {
     font-family: var(--font-body);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: #fff;
     white-space: nowrap;
@@ -924,7 +932,7 @@
 
 .player-info-badge .badge-card-count {
     font-family: var(--font-display);
-    font-size: 1.4rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--gold);
     line-height: 1;
@@ -935,13 +943,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 45px;
-    height: 45px;
+    min-width: 35px;
+    height: 35px;
     background: rgba(0, 0, 0, 0.4);
     border-radius: 50%;
     border: 2px solid rgba(100, 100, 100, 0.3);
     font-family: var(--font-display);
-    font-size: 1.1rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--cream);
     flex-shrink: 0;
@@ -1000,7 +1008,7 @@
 /* Opponent badge position - top center */
 .opponent-badge-container {
     position: absolute;
-    top: 60px;
+    top: 0px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
@@ -1017,15 +1025,15 @@
 /* Opponents row - top for 4/6 player games */
 .opponents-row {
     position: absolute;
-    top: 5px;
+    top: 0px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    justify-content: center;
-    gap: 30px;
+    justify-content: space-between;
+    width: 100%;
     z-index: 150;
     background: rgba(0, 0, 0, 0.4);
-    padding: 5px 15px;
+    padding: 0px 15px;
     border-radius: 8px;
 }
 
