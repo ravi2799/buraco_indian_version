@@ -7,15 +7,20 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Room from './game/Room.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
 
-// CORS configuration for Netlify frontend
+// CORS configuration
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.FRONTEND_URL || '*',
+        origin: '*',
         methods: ['GET', 'POST']
     }
 });
@@ -23,20 +28,34 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+    const frontendPath = path.join(__dirname, '../frontend/dist');
+    app.use(express.static(frontendPath));
+}
+
 // Room storage (in-memory)
 const rooms = new Map(); // roomCode -> Room instance
 const playerRooms = new Map(); // socketId -> roomCode
 
 /**
- * Health check endpoint
+ * Health check endpoint (API)
  */
-app.get('/', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         game: 'Buraco Multiplayer',
         rooms: rooms.size
     });
 });
+
+// Serve frontend index.html for all non-API routes in production
+if (process.env.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+        const frontendPath = path.join(__dirname, '../frontend/dist');
+        res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+}
 
 /**
  * Socket.IO connection handling

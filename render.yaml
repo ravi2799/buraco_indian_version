@@ -1,25 +1,12 @@
 services:
-  # Backend - Node.js with Socket.io
+  # Full-stack service - Backend serves frontend
   - type: web
-    name: buraco-backend
+    name: buraco-game
     env: node
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: node server.js
+    buildCommand: cd frontend && npm install && npm run build && cp config.js dist/ && cp -r assets dist/ && cd ../backend && npm install
+    startCommand: node backend/server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3001
-
-  # Frontend - Static site (built with Vite)
-  - type: web
-    name: buraco-frontend
-    env: static
-    rootDir: frontend
-    buildCommand: npm install && npm run build && cp config.js dist/ && cp -r assets dist/
-    staticPublishPath: dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
