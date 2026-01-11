@@ -31,7 +31,7 @@ class GameTableUI {
 
         // DOM elements
         this.playerHand = document.getElementById('player-hand');
-        this.opponentsArea = document.getElementById('opponents-area');
+        // this.opponentsArea = document.getElementById('opponents-area');
         this.playerTop = document.getElementById('player-top');
         this.playerLeft = document.getElementById('player-left');
         this.playerRight = document.getElementById('player-right');
@@ -119,7 +119,7 @@ class GameTableUI {
         this.discardPile.addEventListener('drop', (e) => {
             e.preventDefault();
             this.discardPile.classList.remove('drag-over');
-            
+
             if (this.draggedCardId && this.canDiscard()) {
                 this.handleDiscardCard(this.draggedCardId);
             }
@@ -142,7 +142,7 @@ class GameTableUI {
             alert('You must draw a card first!');
             return;
         }
-        
+
         try {
             await gameClient.discard(cardId);
             this.selectedCards.clear();
@@ -158,20 +158,20 @@ class GameTableUI {
         this.gameState = gameState;
         this.selectedCards.clear();
         this.lastCurrentPlayer = null; // Reset for new game
-        
+
         // Apply room config (timer settings)
         if (gameState.config) {
             this.turnDuration = gameState.config.turnTimer || 60;
             this.timerEnabled = this.turnDuration > 0;
             this.turnTimeLeft = this.turnDuration;
         }
-        
+
         // Set my team
         const me = gameState.players?.find(p => p.nickname === gameState.myNickname);
         this.myTeam = me?.team || 'A';
-        
+
         this.renderAll();
-        
+
         // Start timer for first turn
         if (this.timerEnabled) {
             this.startTurnTimer();
@@ -200,7 +200,7 @@ class GameTableUI {
         // Restart timer when turn changes to a new player
         const currentPlayerNickname = this.gameState.currentPlayerNickname;
         const turnChanged = currentPlayerNickname !== this.lastCurrentPlayer;
-        
+
         if (turnChanged) {
             this.lastCurrentPlayer = currentPlayerNickname;
             if (this.timerEnabled) {
@@ -248,18 +248,18 @@ class GameTableUI {
     handleCardReorder(draggedId, targetId) {
         // Get current order (either custom or from hand)
         const currentOrder = this.customCardOrder || this.gameState.hand.map(c => c.id);
-        
+
         // Find positions
         const draggedIdx = currentOrder.indexOf(draggedId);
         const targetIdx = currentOrder.indexOf(targetId);
-        
+
         if (draggedIdx === -1 || targetIdx === -1) return;
-        
+
         // Remove dragged card and insert at target position
         const newOrder = [...currentOrder];
         newOrder.splice(draggedIdx, 1);
         newOrder.splice(targetIdx, 0, draggedId);
-        
+
         this.customCardOrder = newOrder;
         this.renderPlayerHand();
     }
@@ -297,13 +297,13 @@ class GameTableUI {
         }
 
         const allPlayers = this.gameState.players;
-        
+
         // Only show for 2-player games
         if (allPlayers.length !== 2) {
             this.opponentBadge.innerHTML = '';
             return;
         }
-        
+
         const myNickname = this.gameState.myNickname;
         const opponent = allPlayers.find(p => p.nickname !== myNickname);
 
@@ -315,9 +315,10 @@ class GameTableUI {
         const isOpponentTurn = opponent.isCurrentPlayer;
         const avatarId = opponent.avatarId || 1;
         const cardCount = opponent.cardCount || 0;
+        const teamClass = this.myTeam === 'A' ? 'team-a' : 'team-b';
 
         this.opponentBadge.innerHTML = `
-            <div class="player-info-badge ${isOpponentTurn ? 'current-turn' : ''}">
+            <div class="player-info-badge ${teamClass} ${isOpponentTurn ? 'current-turn' : ''}">
                 <img src="/assets/avatars/avatar_${avatarId}.png" class="badge-avatar" alt="${opponent.nickname}">
                 <div class="badge-info">
                     <span class="badge-name">${opponent.nickname}</span>
@@ -333,9 +334,9 @@ class GameTableUI {
      */
     startTurnTimer() {
         this.stopTurnTimer();
-        
+
         if (!this.timerEnabled) return;
-        
+
         this.turnTimeLeft = this.turnDuration;
         this.updateTimerDisplay();
 
@@ -436,7 +437,7 @@ class GameTableUI {
         this.playerTop.innerHTML = '';
         this.playerLeft.innerHTML = '';
         this.playerRight.innerHTML = '';
-        
+
         // Hide positions by default
         this.playerTop.classList.add('hidden');
         this.playerLeft.classList.add('hidden');
@@ -452,7 +453,7 @@ class GameTableUI {
         // Arrange players based on count
         // For 2 players: opponent on top
         // For 4 players: teammate on top, opponents on left/right
-        
+
         console.log('DEBUG: myIndex =', myIndex, ', playerCount =', playerCount);
 
         if (playerCount === 2) {
@@ -460,7 +461,7 @@ class GameTableUI {
             // The opponent badge is rendered separately via renderOpponentBadge()
             // Keep opponentsRow hidden for 2-player games
             this.opponentsRow.innerHTML = '';
-            
+
         } else if (playerCount === 4) {
             // 4 player game: show all 3 other players in top row
             // Order: left opponent, teammate (center), right opponent
@@ -469,7 +470,7 @@ class GameTableUI {
                 (myIndex + 2) % 4, // Center (teammate)
                 (myIndex + 3) % 4  // Right
             ];
-            
+
             this.renderOpponentsRow([
                 allPlayers[positions[0]],
                 allPlayers[positions[1]],
@@ -490,17 +491,17 @@ class GameTableUI {
      */
     renderOpponentsRow(players) {
         if (!this.opponentsRow) return;
-        
+
         this.opponentsRow.innerHTML = '';
-        
+
         for (const player of players) {
             if (!player) continue;
-            
+
             const isCurrentTurn = player.isCurrentPlayer;
             const avatarId = player.avatarId || 1;
             const cardCount = player.cardCount || 0;
             const isTeammate = player.team === this.myTeam;
-            
+
             const badgeEl = document.createElement('div');
             badgeEl.className = `player-info-badge ${isCurrentTurn ? 'current-turn' : ''} ${isTeammate ? 'teammate' : 'opponent'}`;
             badgeEl.innerHTML = `
@@ -511,7 +512,7 @@ class GameTableUI {
                 </div>
                 ${this.timerEnabled && isCurrentTurn ? `<div class="badge-timer">${this.turnTimeLeft}</div>` : ''}
             `;
-            
+
             this.opponentsRow.appendChild(badgeEl);
         }
     }
@@ -521,11 +522,11 @@ class GameTableUI {
      */
     renderPlayerAtPosition(container, player) {
         if (!player) return;
-        
+
         const isCurrentTurn = player.isCurrentPlayer && !this.isMyTurn;
         const avatarId = player.avatarId || 1;
         const cardCount = player.cardCount || 0;
-        
+
         container.innerHTML = `
             <div class="table-player-info ${isCurrentTurn ? 'current-turn' : ''}">
                 <div class="player-avatar-wrapper">
@@ -536,7 +537,7 @@ class GameTableUI {
                 <div class="player-cards-stack"></div>
             </div>
         `;
-        
+
         // Create mini card stack
         const stackContainer = container.querySelector('.player-cards-stack');
         const visibleCards = Math.min(cardCount, 5);
@@ -587,7 +588,7 @@ class GameTableUI {
         // Determine which team goes on which side (my team on left)
         const leftTeam = this.myTeam || 'A';
         const rightTeam = leftTeam === 'A' ? 'B' : 'A';
-        
+
         // Update zone headers
         const leftHeader = this.teamAMelds.querySelector('.zone-header h4');
         const rightHeader = this.teamBMelds.querySelector('.zone-header h4');
@@ -757,7 +758,7 @@ class GameTableUI {
             alert('You must draw a card first!');
             return;
         }
-        
+
         if (this.selectedCards.size !== 1) {
             alert('Select exactly one card to discard');
             return;
@@ -782,7 +783,7 @@ class GameTableUI {
             alert('You must draw a card first!');
             return;
         }
-        
+
         if (this.selectedCards.size < 3) {
             alert('Select at least 3 cards to create a meld');
             return;
@@ -806,7 +807,7 @@ class GameTableUI {
             alert('You must draw a card first!');
             return;
         }
-        
+
         if (this.selectedCards.size < 1) {
             alert('Select at least 1 card to add to the meld');
             return;

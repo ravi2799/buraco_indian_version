@@ -70,7 +70,7 @@
                 <button class="player-count-btn selected" data-count="4">4 Players</button>
                 <button class="player-count-btn" data-count="6">6 Players</button>
               </div>
-              
+
               <!-- Room Configuration Options -->
               <div class="room-config">
                 <div class="config-row">
@@ -99,7 +99,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <button id="create-room-btn" class="primary-btn">Create Room</button>
             </div>
 
@@ -156,21 +156,22 @@
           <div class="turn-indicator">
             <span id="current-turn">Waiting...</span>
           </div>
+          <div id="opponents-row" class="opponents-row"></div>
+
+          <!-- Opponent badge (top center for 2-player) -->
+          <div id="opponent-badge" class="opponent-badge-container"></div>
         </div>
 
         <!-- Game table -->
         <div class="game-table">
           <!-- Opponents row (top) for 4/6 player games -->
-          <div id="opponents-row" class="opponents-row"></div>
-          
-          <!-- Opponent badge (top center for 2-player) -->
-          <div id="opponent-badge" class="opponent-badge-container"></div>
-          
+
+
           <!-- Legacy player positions (hidden) -->
           <div id="player-top" class="table-player top-player hidden"></div>
           <div id="player-left" class="table-player left-player hidden"></div>
           <div id="player-right" class="table-player right-player hidden"></div>
-          
+
           <!-- Legacy opponents area (hidden) -->
           <div id="opponents-area" class="hidden"></div>
 
@@ -209,12 +210,12 @@
           <div class="pozzetti-area">
             <div id="pozzetto-1" class="pozzetto">
               <div class="card-stack"></div>
-              <span>Pozzetto 1</span>
+              <span>Bukharo 1</span>
               <span class="pozzetto-count" id="pozzetto-1-count">11 cards</span>
             </div>
             <div id="pozzetto-2" class="pozzetto">
               <div class="card-stack"></div>
-              <span>Pozzetto 2</span>
+              <span>Bukharo 2</span>
               <span class="pozzetto-count" id="pozzetto-2-count">11 cards</span>
             </div>
           </div>
@@ -223,8 +224,8 @@
         <!-- Player's hand -->
         <div class="player-hand-area">
           <div class="hand-controls">
-            <button id="sort-hand-btn" class="control-btn">Sort Hand</button>
             <button id="meld-btn" class="control-btn" disabled>Play Meld</button>
+            <button id="sort-hand-btn" class="control-btn">Sort Hand</button>
           </div>
           <div id="player-hand" class="player-hand"></div>
           <!-- My player badge (bottom right) -->
