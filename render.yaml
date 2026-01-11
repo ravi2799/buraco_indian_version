@@ -1,0 +1,25 @@
+services:
+  # Backend - Node.js with Socket.io
+  - type: web
+    name: buraco-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+
+  # Frontend - Static site
+  - type: web
+    name: buraco-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: echo "No build needed"
+    staticPublishPath: .
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache

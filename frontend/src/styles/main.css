@@ -508,3 +508,203 @@ input[type="text"]:focus {
 .animate-slide-in {
   animation: slideIn 0.3s ease-out;
 }
+
+/* =============================================
+   Character Selection Screen
+   ============================================= */
+
+.selection-container {
+  background: linear-gradient(180deg, rgba(26, 71, 42, 0.9) 0%, rgba(15, 45, 26, 0.95) 100%);
+  border: 4px solid var(--wood-brown);
+  border-radius: 20px;
+  padding: var(--spacing-xl);
+  max-width: 600px; /* Slightly wider for avatars */
+  width: 90%;
+  box-shadow: 
+    var(--shadow-lg),
+    inset 0 0 60px rgba(0, 0, 0, 0.3),
+    0 0 0 2px var(--gold-dark);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.selection-header h1 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: var(--spacing-xl);
+}
+
+.avatars-grid {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-xl);
+}
+
+.avatar-option {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 4px solid var(--wood-brown);
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-md);
+}
+
+.avatar-option img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-option:hover {
+  transform: translateY(-5px);
+  border-color: var(--gold-light);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+.avatar-option.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+  transform: scale(1.1);
+}
+
+.avatar-option.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  color: var(--gold);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  pointer-events: none;
+}
+
+.name-input-container {
+  max-width: 300px;
+  margin: 0 auto var(--spacing-xl);
+}
+
+#selection-nickname-input {
+  text-align: center;
+  font-size: 1.3rem;
+  letter-spacing: 1px;
+}
+
+/* =============================================
+   Room Configuration Options
+   ============================================= */
+
+.room-config {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  border: 1px solid var(--wood-brown);
+}
+
+.config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.config-row:last-child {
+  margin-bottom: 0;
+}
+
+.config-row label {
+  font-size: 0.85rem;
+  color: var(--cream-dark);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.config-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.config-btn {
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--wood-brown);
+  border-radius: 4px;
+  color: var(--cream);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.config-btn:hover {
+  background: rgba(139, 69, 19, 0.4);
+}
+
+.config-btn.selected {
+  background: var(--gold-dark);
+  border-color: var(--gold);
+  color: var(--black-soft);
+  font-weight: 700;
+}
+
+/* Team Swap Button in Waiting Room */
+.player-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.swap-team-btn {
+  background: rgba(212, 175, 55, 0.3);
+  border: 1px solid var(--gold-dark);
+  border-radius: 4px;
+  color: var(--gold);
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.swap-team-btn:hover {
+  background: var(--gold-dark);
+  color: var(--black-soft);
+}
+
+/* Room Config Display in Waiting Room */
+.room-config-display {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid var(--wood-brown);
+}
+
+.config-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.config-item span {
+  color: var(--cream-dark);
+}
+
+.config-item strong {
+  color: var(--gold);
+}

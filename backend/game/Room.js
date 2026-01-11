@@ -21,7 +21,7 @@ function generateRoomCode() {
  * Room class - manages players and game instance
  */
 export default class Room {
-    constructor(hostId, hostNickname, maxPlayers) {
+    constructor(hostId, hostNickname, hostAvatarId, maxPlayers, roomConfig = {}) {
         this.code = generateRoomCode();
         this.maxPlayers = maxPlayers; // 2, 4, or 6
         this.players = new Map(); // socketId -> { nickname, team, seat }
@@ -30,14 +30,21 @@ export default class Room {
         this.game = null;
         this.createdAt = Date.now();
 
+        // Room configuration with defaults
+        this.config = {
+            turnTimer: roomConfig.turnTimer ?? 60,      // seconds (0 = disabled)
+            deckCount: roomConfig.deckCount ?? 2,       // number of decks
+            jokersPerDeck: roomConfig.jokersPerDeck ?? 2 // jokers per deck
+        };
+
         // Add host
-        this.addPlayer(hostId, hostNickname);
+        this.addPlayer(hostId, hostNickname, hostAvatarId, true);
     }
 
     /**
      * Add a player to the room
      */
-    addPlayer(socketId, nickname) {
+    addPlayer(socketId, nickname, avatarId = 1, isHost = false) {
         if (this.players.size >= this.maxPlayers) {
             return { success: false, reason: 'Room is full' };
         }
@@ -60,7 +67,8 @@ export default class Room {
             nickname,
             team,
             seat,
-            ready: socketId === this.hostId // Host is auto-ready
+            avatarId: Number.isInteger(Number(avatarId)) ? Number(avatarId) : 1,
+            ready: isHost // Host is auto-ready
         });
 
         return { success: true, seat, team };
@@ -77,6 +85,39 @@ export default class Room {
             return seat === 0 ? 'A' : 'B';
         }
         return seat % 2 === 0 ? 'A' : 'B';
+    }
+
+    /**
+     * Swap a player's team (for 4/6 player games)
+     */
+    swapPlayerTeam(seat) {
+        if (this.maxPlayers === 2) {
+            return { success: false, reason: 'Cannot swap teams in 2-player game' };
+        }
+
+        if (this.status !== 'waiting') {
+            return { success: false, reason: 'Cannot swap teams after game started' };
+        }
+
+        // Find player by seat
+        let targetPlayer = null;
+        let targetSocketId = null;
+        for (const [socketId, player] of this.players) {
+            if (player.seat === seat) {
+                targetPlayer = player;
+                targetSocketId = socketId;
+                break;
+            }
+        }
+
+        if (!targetPlayer) {
+            return { success: false, reason: 'Player not found' };
+        }
+
+        // Swap team
+        targetPlayer.team = targetPlayer.team === 'A' ? 'B' : 'A';
+
+        return { success: true };
     }
 
     /**
@@ -113,8 +154,8 @@ export default class Room {
 
         this.status = 'playing';
 
-        // Deal cards
-        const dealt = dealCards(this.maxPlayers);
+        // Deal cards with room config
+        const dealt = dealCards(this.maxPlayers, this.config.deckCount, this.config.jokersPerDeck);
 
         // Create game state
         this.game = new GameState({
@@ -126,7 +167,8 @@ export default class Room {
             hands: dealt.hands,
             pozzetti: dealt.pozzetti,
             drawPile: dealt.drawPile,
-            discardPile: dealt.discardPile
+            discardPile: dealt.discardPile,
+            config: this.config
         });
 
         return { success: true, game: this.game };
@@ -142,10 +184,12 @@ export default class Room {
             currentPlayers: this.players.size,
             status: this.status,
             hostNickname: this.players.get(this.hostId)?.nickname,
+            config: this.config,
             players: Array.from(this.players.values()).map(p => ({
                 nickname: p.nickname,
                 team: p.team,
-                seat: p.seat
+                seat: p.seat,
+                avatarId: p.avatarId
             }))
         };
     }

@@ -16,9 +16,16 @@ const PHASES = {
 };
 
 export default class GameState {
-    constructor({ playerCount, players, hands, pozzetti, drawPile, discardPile }) {
+    constructor({ playerCount, players, hands, pozzetti, drawPile, discardPile, config = {} }) {
         this.playerCount = playerCount;
         this.players = players; // Array of { socketId, nickname, team, seat }
+
+        // Room configuration
+        this.config = {
+            turnTimer: config.turnTimer ?? 60,
+            deckCount: config.deckCount ?? 2,
+            jokersPerDeck: config.jokersPerDeck ?? 2
+        };
 
         // Card state
         this.hands = new Map(); // socketId -> cards array
@@ -81,12 +88,15 @@ export default class GameState {
 
             // Player's own team
             myTeam: playerInfo.team,
+            myNickname: playerInfo.nickname,
+            myAvatarId: playerInfo.avatarId,
 
             // Other players (hidden hands)
             players: this.players.map(p => ({
                 nickname: p.nickname,
                 seat: p.seat,
                 team: p.team,
+                avatarId: p.avatarId,
                 cardCount: this.hands.get(p.socketId)?.length || 0,
                 isCurrentPlayer: p.socketId === this.getCurrentPlayerId()
             })),
@@ -122,7 +132,10 @@ export default class GameState {
             // Game status
             isGameOver: this.isGameOver,
             winner: this.winner,
-            scores: this.getLiveScores()
+            scores: this.getLiveScores(),
+
+            // Room config (for timer, etc.)
+            config: this.config
         };
     }
 
@@ -332,8 +345,8 @@ export default class GameState {
         }
 
         const wildCard = meld.cards[wildIdx];
-        if (wildCard.rank !== 'JOKER' && !(wildCard.rank === '2' && wildCard.suit !== meld.suit)) {
-            return { success: false, reason: 'Selected card is not a wild card in this meld' };
+        if (wildCard.rank !== 'JOKER') {
+            return { success: false, reason: 'Selected card is not a wild card (only Jokers are wild)' };
         }
 
         // Find the natural card in hand

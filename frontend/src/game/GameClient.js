@@ -5,8 +5,8 @@
 
 import { io } from 'socket.io-client';
 
-// Backend URL - change this for production
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+// Backend URL - uses window.BACKEND_URL from config.js or falls back to localhost
+const BACKEND_URL = window.BACKEND_URL || 'http://localhost:3001';
 
 class GameClient {
     constructor() {
@@ -103,9 +103,9 @@ class GameClient {
     /**
      * Create a new room
      */
-    createRoom(nickname, maxPlayers) {
+    createRoom(nickname, avatarId, maxPlayers, roomConfig = {}) {
         return new Promise((resolve, reject) => {
-            this.socket.emit('createRoom', { nickname, maxPlayers }, (response) => {
+            this.socket.emit('createRoom', { nickname, avatarId, maxPlayers, roomConfig }, (response) => {
                 if (response.success) {
                     this.roomCode = response.roomCode;
                     resolve(response);
@@ -119,11 +119,26 @@ class GameClient {
     /**
      * Join an existing room
      */
-    joinRoom(nickname, roomCode) {
+    joinRoom(nickname, avatarId, roomCode) {
         return new Promise((resolve, reject) => {
-            this.socket.emit('joinRoom', { nickname, roomCode }, (response) => {
+            this.socket.emit('joinRoom', { nickname, avatarId, roomCode }, (response) => {
                 if (response.success) {
                     this.roomCode = roomCode;
+                    resolve(response);
+                } else {
+                    reject(new Error(response.reason));
+                }
+            });
+        });
+    }
+
+    /**
+     * Swap a player's team (host only, 4/6 player games)
+     */
+    swapTeam(seat) {
+        return new Promise((resolve, reject) => {
+            this.socket.emit('swapTeam', { seat }, (response) => {
+                if (response.success) {
                     resolve(response);
                 } else {
                     reject(new Error(response.reason));

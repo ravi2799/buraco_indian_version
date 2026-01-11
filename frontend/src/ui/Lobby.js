@@ -9,14 +9,26 @@ class LobbyUI {
     constructor() {
         this.selectedPlayerCount = 4;
         this.nickname = '';
+        this.avatarId = null;
+
+        // Room configuration
+        this.roomConfig = {
+            turnTimer: 60,  // seconds (0 = disabled)
+            deckCount: 2,
+            jokersPerDeck: 2
+        };
 
         // DOM elements
-        this.nicknameInput = document.getElementById('nickname-input');
         this.playerCountBtns = document.querySelectorAll('.player-count-btn');
         this.createRoomBtn = document.getElementById('create-room-btn');
         this.roomCodeInput = document.getElementById('room-code-input');
         this.joinRoomBtn = document.getElementById('join-room-btn');
         this.errorMessage = document.getElementById('error-message');
+
+        // Config buttons
+        this.timerBtns = document.querySelectorAll('.config-btn[data-timer]');
+        this.deckBtns = document.querySelectorAll('.config-btn[data-decks]');
+        this.jokerBtns = document.querySelectorAll('.config-btn[data-jokers]');
 
         this.onRoomJoined = null; // Callback when room is joined
 
@@ -33,6 +45,33 @@ class LobbyUI {
             });
         });
 
+        // Timer config
+        this.timerBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.timerBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                this.roomConfig.turnTimer = parseInt(btn.dataset.timer);
+            });
+        });
+
+        // Deck count config
+        this.deckBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.deckBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                this.roomConfig.deckCount = parseInt(btn.dataset.decks);
+            });
+        });
+
+        // Jokers config
+        this.jokerBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.jokerBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                this.roomConfig.jokersPerDeck = parseInt(btn.dataset.jokers);
+            });
+        });
+
         // Create room
         this.createRoomBtn.addEventListener('click', () => this.handleCreateRoom());
 
@@ -40,12 +79,6 @@ class LobbyUI {
         this.joinRoomBtn.addEventListener('click', () => this.handleJoinRoom());
 
         // Enter key handlers
-        this.nicknameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && this.roomCodeInput.value.length === 0) {
-                this.handleCreateRoom();
-            }
-        });
-
         this.roomCodeInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.handleJoinRoom();
@@ -59,16 +92,11 @@ class LobbyUI {
     }
 
     getNickname() {
-        const name = this.nicknameInput.value.trim();
-        if (!name) {
-            this.showError('Please enter a nickname');
+        if (!this.nickname) {
+            this.showError('Nickname is missing');
             return null;
         }
-        if (name.length > 20) {
-            this.showError('Nickname too long (max 20 characters)');
-            return null;
-        }
-        return name;
+        return this.nickname;
     }
 
     async handleCreateRoom() {
@@ -80,7 +108,7 @@ class LobbyUI {
 
         try {
             await gameClient.connect();
-            const response = await gameClient.createRoom(nickname, this.selectedPlayerCount);
+            const response = await gameClient.createRoom(nickname, this.avatarId, this.selectedPlayerCount, this.roomConfig);
             this.nickname = nickname;
 
             if (this.onRoomJoined) {
@@ -108,7 +136,7 @@ class LobbyUI {
 
         try {
             await gameClient.connect();
-            const response = await gameClient.joinRoom(nickname, roomCode);
+            const response = await gameClient.joinRoom(nickname, this.avatarId, roomCode);
             this.nickname = nickname;
 
             if (this.onRoomJoined) {

@@ -6,8 +6,10 @@
 import gameClient from './game/GameClient.js';
 import LobbyUI from './ui/Lobby.js';
 import GameTableUI from './ui/GameTable.js';
+import CharacterSelection from './ui/CharacterSelection.js';
 
 // Screen elements
+const characterSelectionScreen = document.getElementById('character-selection-screen');
 const lobbyScreen = document.getElementById('lobby-screen');
 const waitingScreen = document.getElementById('waiting-screen');
 const gameScreen = document.getElementById('game-screen');
@@ -21,6 +23,9 @@ const maxPlayers = document.getElementById('max-players');
 const playersContainer = document.getElementById('players-container');
 const startGameBtn = document.getElementById('start-game-btn');
 const leaveRoomBtn = document.getElementById('leave-room-btn');
+const configTimer = document.getElementById('config-timer');
+const configDecks = document.getElementById('config-decks');
+const configJokers = document.getElementById('config-jokers');
 
 // Game over elements
 const winnerText = document.getElementById('winner-text');
@@ -33,6 +38,7 @@ let isHost = false;
 let currentRoomInfo = null;
 
 // Initialize UI modules
+const characterSelection = new CharacterSelection();
 const lobbyUI = new LobbyUI();
 const gameTableUI = new GameTableUI();
 
@@ -40,7 +46,7 @@ const gameTableUI = new GameTableUI();
  * Switch between screens
  */
 function showScreen(screenId) {
-    [lobbyScreen, waitingScreen, gameScreen].forEach(screen => {
+    [characterSelectionScreen, lobbyScreen, waitingScreen, gameScreen].forEach(screen => {
         screen.classList.remove('active');
     });
 
@@ -60,9 +66,19 @@ function updateWaitingRoom(roomInfo) {
     playerCount.textContent = roomInfo.currentPlayers;
     maxPlayers.textContent = roomInfo.maxPlayers;
 
+    // Update config display
+    if (roomInfo.config) {
+        configTimer.textContent = roomInfo.config.turnTimer > 0 ? `${roomInfo.config.turnTimer}s` : 'Off';
+        configDecks.textContent = roomInfo.config.deckCount;
+        configJokers.textContent = roomInfo.config.jokersPerDeck;
+    }
+
     // Render player slots
     playersContainer.innerHTML = '';
 
+    // For 4/6 players, group by teams
+    const showTeamSwap = isHost && roomInfo.maxPlayers > 2;
+    
     for (let i = 0; i < roomInfo.maxPlayers; i++) {
         const player = roomInfo.players[i];
         const slot = document.createElement('div');
@@ -71,15 +87,35 @@ function updateWaitingRoom(roomInfo) {
         if (player) {
             slot.classList.add('filled');
             slot.classList.add(`team-${player.team.toLowerCase()}`);
+            
+            let swapBtnHtml = '';
+            if (showTeamSwap) {
+                const otherTeam = player.team === 'A' ? 'B' : 'A';
+                swapBtnHtml = `<button class="swap-team-btn" data-seat="${player.seat}" title="Move to Team ${otherTeam}">⇄</button>`;
+            }
+            
             slot.innerHTML = `
-        <div class="nickname">${player.nickname}</div>
-        <div class="team-badge">Team ${player.team}</div>
-      `;
+                <div class="player-info-row">
+                    <div class="nickname">${player.nickname}</div>
+                    ${swapBtnHtml}
+                </div>
+                <div class="team-badge">Team ${player.team}</div>
+            `;
         } else {
             slot.innerHTML = `<div class="nickname" style="opacity: 0.5">Waiting...</div>`;
         }
 
         playersContainer.appendChild(slot);
+    }
+
+    // Add swap button event listeners
+    if (showTeamSwap) {
+        document.querySelectorAll('.swap-team-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const seat = parseInt(btn.dataset.seat);
+                handleSwapTeam(seat);
+            });
+        });
     }
 
     // Enable start button only for host when room is full
@@ -91,6 +127,18 @@ function updateWaitingRoom(roomInfo) {
         startGameBtn.textContent = `Waiting for ${roomInfo.maxPlayers - roomInfo.currentPlayers} more...`;
     } else {
         startGameBtn.textContent = 'Waiting for host...';
+    }
+}
+
+/**
+ * Handle team swap request
+ */
+async function handleSwapTeam(seat) {
+    try {
+        await gameClient.swapTeam(seat);
+    } catch (err) {
+        console.error('Failed to swap team:', err);
+        alert(err.message);
     }
 }
 
@@ -137,6 +185,15 @@ gameClient.on('gameStarted', (data) => {
 
 gameTableUI.onGameOver = (result) => {
     showGameOver(result);
+};
+
+/**
+ * Character Selection listener
+ */
+characterSelection.onSelectionComplete = (info) => {
+    lobbyUI.nickname = info.nickname;
+    lobbyUI.avatarId = info.avatarId;
+    showScreen('lobby-screen');
 };
 
 /**
@@ -196,6 +253,6 @@ gameClient.on('disconnected', () => {
 });
 
 // Initial state
-showScreen('lobby-screen');
+showScreen('character-selection-screen');
 
 console.log('Buraco game initialized');

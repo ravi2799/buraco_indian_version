@@ -14,12 +14,45 @@
   <link rel="stylesheet" href="/src/styles/main.css">
   <link rel="stylesheet" href="/src/styles/cards.css">
   <link rel="stylesheet" href="/src/styles/table.css">
+  <!-- Config - UPDATE BACKEND_URL for production -->
+  <script src="/config.js"></script>
 </head>
 
 <body>
   <div id="app">
+    <!-- Character Selection Screen -->
+    <div id="character-selection-screen" class="screen active">
+      <div class="selection-container">
+        <div class="selection-header">
+          <h1>Choose Your Character</h1>
+        </div>
+
+        <div class="avatars-grid">
+          <div class="avatar-option" data-avatar="1">
+            <img src="/assets/avatars/avatar_1.png" alt="Avatar 1">
+          </div>
+          <div class="avatar-option" data-avatar="2">
+            <img src="/assets/avatars/avatar_2.png" alt="Avatar 2">
+          </div>
+          <div class="avatar-option" data-avatar="3">
+            <img src="/assets/avatars/avatar_3.png" alt="Avatar 3">
+          </div>
+          <div class="avatar-option" data-avatar="4">
+            <img src="/assets/avatars/avatar_4.png" alt="Avatar 4">
+          </div>
+        </div>
+
+        <div class="name-input-container">
+          <input type="text" id="selection-nickname-input" placeholder="Enter Your Name" maxlength="15"
+            autocomplete="off">
+        </div>
+
+        <button id="confirm-character-btn" class="primary-btn" disabled>Continue</button>
+      </div>
+    </div>
+
     <!-- Lobby Screen -->
-    <div id="lobby-screen" class="screen active">
+    <div id="lobby-screen" class="screen">
       <div class="lobby-container">
         <header class="lobby-header">
           <h1 class="game-title">Buraco</h1>
@@ -27,10 +60,7 @@
         </header>
 
         <div class="lobby-content">
-          <div class="nickname-section">
-            <label for="nickname-input">Your Nickname</label>
-            <input type="text" id="nickname-input" placeholder="Enter your name" maxlength="20" autocomplete="off">
-          </div>
+          <!-- Nickname section removed, moved to character selection -->
 
           <div class="action-buttons">
             <div class="create-room-section">
@@ -40,6 +70,36 @@
                 <button class="player-count-btn selected" data-count="4">4 Players</button>
                 <button class="player-count-btn" data-count="6">6 Players</button>
               </div>
+              
+              <!-- Room Configuration Options -->
+              <div class="room-config">
+                <div class="config-row">
+                  <label>Turn Timer (sec)</label>
+                  <div class="config-selector">
+                    <button class="config-btn" data-timer="0">Off</button>
+                    <button class="config-btn" data-timer="30">30</button>
+                    <button class="config-btn selected" data-timer="60">60</button>
+                    <button class="config-btn" data-timer="90">90</button>
+                  </div>
+                </div>
+                <div class="config-row">
+                  <label>Decks</label>
+                  <div class="config-selector">
+                    <button class="config-btn selected" data-decks="2">2</button>
+                    <button class="config-btn" data-decks="3">3</button>
+                    <button class="config-btn" data-decks="4">4</button>
+                  </div>
+                </div>
+                <div class="config-row">
+                  <label>Jokers per Deck</label>
+                  <div class="config-selector">
+                    <button class="config-btn" data-jokers="0">0</button>
+                    <button class="config-btn selected" data-jokers="2">2</button>
+                    <button class="config-btn" data-jokers="4">4</button>
+                  </div>
+                </div>
+              </div>
+              
               <button id="create-room-btn" class="primary-btn">Create Room</button>
             </div>
 
@@ -69,6 +129,13 @@
           <button id="copy-code-btn" class="icon-btn" title="Copy code">📋</button>
         </div>
 
+        <!-- Room Configuration Display -->
+        <div class="room-config-display" id="room-config-display">
+          <div class="config-item"><span>Timer:</span> <strong id="config-timer">60s</strong></div>
+          <div class="config-item"><span>Decks:</span> <strong id="config-decks">2</strong></div>
+          <div class="config-item"><span>Jokers/Deck:</span> <strong id="config-jokers">2</strong></div>
+        </div>
+
         <div class="players-list">
           <h3>Players (<span id="player-count">0</span>/<span id="max-players">4</span>)</h3>
           <div id="players-container"></div>
@@ -93,8 +160,19 @@
 
         <!-- Game table -->
         <div class="game-table">
-          <!-- Other players' hands (shown as card backs) -->
-          <div id="opponents-area"></div>
+          <!-- Opponents row (top) for 4/6 player games -->
+          <div id="opponents-row" class="opponents-row"></div>
+          
+          <!-- Opponent badge (top center for 2-player) -->
+          <div id="opponent-badge" class="opponent-badge-container"></div>
+          
+          <!-- Legacy player positions (hidden) -->
+          <div id="player-top" class="table-player top-player hidden"></div>
+          <div id="player-left" class="table-player left-player hidden"></div>
+          <div id="player-right" class="table-player right-player hidden"></div>
+          
+          <!-- Legacy opponents area (hidden) -->
+          <div id="opponents-area" class="hidden"></div>
 
           <!-- Center table area -->
           <!-- Melds area - Split View -->
@@ -149,10 +227,12 @@
             <button id="meld-btn" class="control-btn" disabled>Play Meld</button>
           </div>
           <div id="player-hand" class="player-hand"></div>
+          <!-- My player badge (bottom right) -->
+          <div id="my-player-badge" class="my-badge-container"></div>
         </div>
 
-        <!-- Action buttons -->
-        <div class="action-bar">
+        <!-- Hidden action buttons (actions triggered via drag/click) -->
+        <div class="action-bar hidden">
           <button id="draw-btn" class="action-btn" disabled>Draw Card</button>
           <button id="take-discard-btn" class="action-btn" disabled>Take Discard</button>
           <button id="discard-btn" class="action-btn" disabled>Discard</button>

@@ -22,28 +22,31 @@ function createCard(suit, rank, deckIndex) {
     id: `${suit}-${rank}-${deckIndex}`,
     suit,
     rank,
-    isWild: rank === 'JOKER' || rank === '2',
+    isWild: rank === 'JOKER',
     isJoker: rank === 'JOKER',
     value: CARD_VALUES[rank]
   };
 }
 
 /**
- * Create the full 108-card deck (2 standard decks + 4 jokers)
+ * Create a configurable deck
+ * @param {number} deckCount - Number of standard 52-card decks (default 2)
+ * @param {number} jokersPerDeck - Number of jokers per deck (default 2)
  */
-export function createDeck() {
+export function createDeck(deckCount = 2, jokersPerDeck = 2) {
   const deck = [];
 
-  // Create two copies of the standard deck
-  for (let deckIndex = 0; deckIndex < 2; deckIndex++) {
+  // Create copies of the standard deck
+  for (let deckIndex = 0; deckIndex < deckCount; deckIndex++) {
     for (const suit of SUITS) {
       for (const rank of RANKS) {
         deck.push(createCard(suit, rank, deckIndex));
       }
     }
-    // Add 2 jokers per deck
-    deck.push(createCard('joker', 'JOKER', deckIndex * 2));
-    deck.push(createCard('joker', 'JOKER', deckIndex * 2 + 1));
+    // Add jokers per deck
+    for (let j = 0; j < jokersPerDeck; j++) {
+      deck.push(createCard('joker', 'JOKER', deckIndex * jokersPerDeck + j));
+    }
   }
 
   return deck;
@@ -64,10 +67,12 @@ export function shuffle(deck) {
 /**
  * Deal cards for a game
  * @param {number} playerCount - Number of players (2, 4, or 6)
+ * @param {number} deckCount - Number of decks to use (default 2)
+ * @param {number} jokersPerDeck - Jokers per deck (default 2)
  * @returns {object} - { hands, pozzetti, drawPile, discardPile }
  */
-export function dealCards(playerCount) {
-  const deck = shuffle(createDeck());
+export function dealCards(playerCount, deckCount = 2, jokersPerDeck = 2) {
+  const deck = shuffle(createDeck(deckCount, jokersPerDeck));
 
   const hands = [];
   const cardsPerHand = 11;

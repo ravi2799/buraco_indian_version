@@ -17,19 +17,10 @@ export function sortSequenceMeld(cards, suit) {
     const wilds = [];
     const naturals = [];
 
-    // Separate wilds from naturals
+    // Separate wilds from naturals - only Jokers are wild
     for (const card of cards) {
         if (card.rank === 'JOKER') {
             wilds.push(card);
-        } else if (card.rank === '2') {
-            // Check if this 2 is in its natural position (same suit, between A and 3)
-            const hasThree = cards.some(c => c.rank === '3' && c.suit === suit);
-            const hasAce = cards.some(c => c.rank === 'A' && c.suit === suit);
-            if (card.suit === suit && (hasThree || hasAce)) {
-                naturals.push(card);
-            } else {
-                wilds.push(card);
-            }
         } else {
             naturals.push(card);
         }
@@ -85,19 +76,18 @@ export function sortSequenceMeld(cards, suit) {
 }
 
 /**
- * Check if a card is a wild card
+ * Check if a card is a wild card - only Jokers are wild
  */
 function isWildCard(card) {
-    return card.rank === 'JOKER' || card.rank === '2';
+    return card.rank === 'JOKER';
 }
 
 /**
- * Validate a set (combinazione) - 3+ cards of same rank
+ * Validate a set (combinazione) - 3-7 cards of same rank
  * Rules:
- * - At least 3 cards
+ * - At least 3 cards, maximum 7 cards
  * - All same rank (except wilds)
  * - Maximum 1 wild card
- * - Maximum 9 cards total
  * - Cannot be all wilds
  */
 export function validateSet(cards) {
@@ -105,8 +95,8 @@ export function validateSet(cards) {
         return { valid: false, reason: 'Set must have at least 3 cards' };
     }
 
-    if (cards.length > 9) {
-        return { valid: false, reason: 'Set cannot have more than 9 cards' };
+    if (cards.length > 7) {
+        return { valid: false, reason: 'Meld cannot have more than 7 cards' };
     }
 
     const wilds = cards.filter(c => isWildCard(c));
@@ -138,24 +128,27 @@ export function validateSet(cards) {
 }
 
 /**
- * Validate a sequence (sequenza) - 3+ consecutive cards in same suit
+ * Validate a sequence (sequenza) - 3-7 consecutive cards in same suit
  * Rules:
- * - At least 3 cards
+ * - At least 3 cards, maximum 7 cards
  * - All same suit (naturals)
  * - Consecutive ranks
- * - Maximum 1 wild card (unless natural 2 in position + another wild)
+ * - Maximum 1 wild card (Joker only)
  * - Ace can be at either end but not both
- * - Wild cards go at lower end when placed
+ * - 2 is a normal card (not wild)
  */
 export function validateSequence(cards) {
     if (cards.length < 3) {
         return { valid: false, reason: 'Sequence must have at least 3 cards' };
     }
 
-    // Separate wilds and naturals
+    if (cards.length > 7) {
+        return { valid: false, reason: 'Meld cannot have more than 7 cards' };
+    }
+
+    // Separate wilds and naturals - only Jokers are wild
     const wilds = cards.filter(c => c.rank === 'JOKER');
-    const twos = cards.filter(c => c.rank === '2');
-    const naturals = cards.filter(c => c.rank !== 'JOKER' && c.rank !== '2');
+    const naturals = cards.filter(c => c.rank !== 'JOKER');
 
     if (naturals.length === 0) {
         return { valid: false, reason: 'Sequence must contain natural cards' };
@@ -168,7 +161,6 @@ export function validateSequence(cards) {
     }
 
     // Build the sequence by position
-    // A 2 can be natural (in position next to 3) or wild
     const positions = [];
 
     for (const card of naturals) {
@@ -178,11 +170,6 @@ export function validateSequence(cards) {
 
     // Sort by position
     positions.sort((a, b) => a.idx - b.idx);
-
-    // Check for consecutive positions and count gaps
-    let gaps = 0;
-    let wildsUsed = 0;
-    const usedWilds = [];
 
     // Check if there's an Ace that could be at the high end (after K)
     const hasLowAce = positions.some(p => p.idx === 0 && positions.some(p2 => p2.idx === 1 || p2.idx === 2));
@@ -196,6 +183,7 @@ export function validateSequence(cards) {
     }
 
     // Count gaps between consecutive cards
+    let gaps = 0;
     for (let i = 1; i < positions.length; i++) {
         const gap = positions[i].idx - positions[i - 1].idx - 1;
         if (gap > 0) {
@@ -205,51 +193,16 @@ export function validateSequence(cards) {
         }
     }
 
-    // Check twos - they can be natural (position 1) or wild
-    let naturalTwoCount = 0;
-    let wildTwoCount = 0;
-
-    for (const two of twos) {
-        // Check if 2 is in its natural position (between A and 3)
-        const hasThree = positions.some(p => p.idx === 2);
-        const hasAce = positions.some(p => p.idx === 0);
-
-        if (two.suit === suit && (hasThree || hasAce) && gaps === 0) {
-            // This 2 is natural
-            naturalTwoCount++;
-            positions.push({ idx: 1, card: two, isWild: false });
-        } else {
-            // This 2 is used as wild
-            wildTwoCount++;
-            usedWilds.push(two);
-        }
+    // Can only use 1 wild card (Joker) total
+    if (wilds.length > 1) {
+        return { valid: false, reason: 'Sequence can have at most 1 wild card (Joker)' };
     }
 
-    // Sort again after adding natural twos
-    positions.sort((a, b) => a.idx - b.idx);
-
-    // Recalculate gaps
-    gaps = 0;
-    for (let i = 1; i < positions.length; i++) {
-        const gap = positions[i].idx - positions[i - 1].idx - 1;
-        gaps += Math.max(0, gap);
-    }
-
-    // Total wilds available
-    const totalWilds = wilds.length + wildTwoCount;
-
-    // Can only use 1 wild card total (unless there's a natural 2 + wild)
-    const allowedWilds = naturalTwoCount > 0 ? 2 : 1;
-
-    if (totalWilds > allowedWilds) {
-        return { valid: false, reason: 'Sequence can have at most 1 wild card (unless natural 2 is present)' };
-    }
-
-    if (gaps > totalWilds) {
+    if (gaps > wilds.length) {
         return { valid: false, reason: 'Not enough wild cards to fill gaps in sequence' };
     }
 
-    const isClean = totalWilds === 0 || (totalWilds > 0 && gaps === 0 && naturalTwoCount > 0);
+    const isClean = wilds.length === 0;
 
     return {
         valid: true,

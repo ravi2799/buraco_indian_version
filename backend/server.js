@@ -47,7 +47,7 @@ io.on('connection', (socket) => {
     /**
      * Create a new room
      */
-    socket.on('createRoom', ({ nickname, maxPlayers }, callback) => {
+    socket.on('createRoom', ({ nickname, maxPlayers, avatarId, roomConfig }, callback) => {
         try {
             if (!nickname || nickname.trim().length === 0) {
                 return callback({ success: false, reason: 'Nickname required' });
@@ -57,7 +57,7 @@ io.on('connection', (socket) => {
                 return callback({ success: false, reason: 'Invalid player count' });
             }
 
-            const room = new Room(socket.id, nickname.trim(), maxPlayers);
+            const room = new Room(socket.id, nickname.trim(), avatarId, maxPlayers, roomConfig);
             rooms.set(room.code, room);
             playerRooms.set(socket.id, room.code);
 
@@ -79,7 +79,7 @@ io.on('connection', (socket) => {
     /**
      * Join an existing room
      */
-    socket.on('joinRoom', ({ nickname, roomCode }, callback) => {
+    socket.on('joinRoom', ({ nickname, roomCode, avatarId }, callback) => {
         try {
             if (!nickname || nickname.trim().length === 0) {
                 return callback({ success: false, reason: 'Nickname required' });
@@ -92,7 +92,7 @@ io.on('connection', (socket) => {
                 return callback({ success: false, reason: 'Room not found' });
             }
 
-            const result = room.addPlayer(socket.id, nickname.trim());
+            const result = room.addPlayer(socket.id, nickname.trim(), avatarId);
 
             if (!result.success) {
                 return callback(result);
@@ -115,6 +115,43 @@ io.on('connection', (socket) => {
         } catch (err) {
             console.error('Error joining room:', err);
             callback({ success: false, reason: 'Failed to join room' });
+        }
+    });
+
+    /**
+     * Swap a player's team (host only, 4/6 player games)
+     */
+    socket.on('swapTeam', ({ seat }, callback) => {
+        try {
+            const roomCode = playerRooms.get(socket.id);
+            if (!roomCode) {
+                return callback({ success: false, reason: 'Not in a room' });
+            }
+
+            const room = rooms.get(roomCode);
+            if (!room) {
+                return callback({ success: false, reason: 'Room not found' });
+            }
+
+            if (room.hostId !== socket.id) {
+                return callback({ success: false, reason: 'Only host can swap teams' });
+            }
+
+            const result = room.swapPlayerTeam(seat);
+
+            if (!result.success) {
+                return callback(result);
+            }
+
+            // Notify all players in the room
+            io.to(roomCode).emit('playerJoined', {
+                roomInfo: room.getPublicInfo()
+            });
+
+            callback({ success: true });
+        } catch (err) {
+            console.error('Error swapping team:', err);
+            callback({ success: false, reason: 'Failed to swap team' });
         }
     });
 
