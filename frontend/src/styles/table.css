@@ -444,20 +444,20 @@
     border-radius: 10px;
 }
 
-/* Discard Pile - Shows only top card */
+/* Discard Pile - Shows cards in a row */
 .discard-pile {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     gap: 4px;
     min-width: 80px;
-    max-width: 200px;
+    max-width: 60vw;
     min-height: 100px;
+    overflow: hidden;
 }
 
 .discard-row {
     display: flex;
-    gap: -20px;
     padding: 4px;
 }
 
@@ -665,9 +665,10 @@
 .player-hand {
     display: flex;
     justify-content: flex-start;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px;
     padding: var(--spacing-sm);
+    padding-right: 150px;
     min-height: 120px;
 }
 

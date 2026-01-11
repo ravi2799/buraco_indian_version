@@ -116,56 +116,97 @@ export function renderHand(container, cards, options = {}) {
             }
         }
     } else {
-        // Default sort by suit then rank
-        displayCards = [...cards].sort((a, b) => {
-            const suitOrder = ['hearts', 'diamonds', 'clubs', 'spades', 'joker'];
-            const rankOrder = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'JOKER'];
-
-            const suitDiff = suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);
-            if (suitDiff !== 0) return suitDiff;
-            return rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank);
-        });
+        // Keep original order (new cards added to left)
+        displayCards = [...cards];
     }
 
-    for (const card of displayCards) {
+    // Calculate dynamic overlap when cards > 21
+    const cardCount = displayCards.length;
+    let marginLeft = -10; // Default margin (from CSS)
+    if (cardCount > 21) {
+        // Increase overlap as card count grows
+        const extraCards = cardCount - 21;
+        marginLeft = -10 - (extraCards * 3); // Tighter by 3px per extra card
+        marginLeft = Math.max(marginLeft, -50); // Cap at -50px
+    }
+
+    for (let i = 0; i < displayCards.length; i++) {
+        const card = displayCards[i];
         const cardEl = createCardElement(card);
+        
+        // Apply dynamic margin for cards after the first
+        if (cardCount > 21 && i > 0) {
+            cardEl.style.marginLeft = `${marginLeft}px`;
+        }
         
         // Make card draggable
         cardEl.draggable = true;
         
         cardEl.addEventListener('dragstart', (e) => {
             cardEl.classList.add('dragging');
+            container.classList.add('drag-active');
             e.dataTransfer.setData('text/plain', card.id);
             e.dataTransfer.effectAllowed = 'move';
+            
+            // Create custom drag image
+            const dragImage = cardEl.cloneNode(true);
+            dragImage.style.transform = 'rotate(5deg) scale(1.1)';
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            document.body.appendChild(dragImage);
+            e.dataTransfer.setDragImage(dragImage, 35, 50);
+            setTimeout(() => dragImage.remove(), 0);
+            
             if (onCardDragStart) onCardDragStart(card);
         });
         
         cardEl.addEventListener('dragend', () => {
             cardEl.classList.remove('dragging');
+            container.classList.remove('drag-active');
+            // Clean up all drag indicators
+            container.querySelectorAll('.drag-target, .drag-over-left, .drag-over-right').forEach(el => {
+                el.classList.remove('drag-target', 'drag-over-left', 'drag-over-right');
+            });
             if (onCardDragEnd) onCardDragEnd(card);
         });
 
-        // Allow dropping on cards to reorder
+        // Allow dropping on cards to reorder with position indicator
         cardEl.addEventListener('dragover', (e) => {
             e.preventDefault();
             const dragging = container.querySelector('.dragging');
             if (dragging && dragging !== cardEl) {
                 cardEl.classList.add('drag-target');
+                
+                // Determine drop position (left or right of card)
+                const rect = cardEl.getBoundingClientRect();
+                const midpoint = rect.left + rect.width / 2;
+                const isLeftSide = e.clientX < midpoint;
+                
+                cardEl.classList.remove('drag-over-left', 'drag-over-right');
+                cardEl.classList.add(isLeftSide ? 'drag-over-left' : 'drag-over-right');
+                cardEl.dataset.dropSide = isLeftSide ? 'left' : 'right';
             }
         });
 
-        cardEl.addEventListener('dragleave', () => {
-            cardEl.classList.remove('drag-target');
+        cardEl.addEventListener('dragleave', (e) => {
+            // Only remove if actually leaving the card (not entering a child)
+            if (!cardEl.contains(e.relatedTarget)) {
+                cardEl.classList.remove('drag-target', 'drag-over-left', 'drag-over-right');
+                delete cardEl.dataset.dropSide;
+            }
         });
 
         cardEl.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            cardEl.classList.remove('drag-target');
+            
+            const dropSide = cardEl.dataset.dropSide || 'right';
+            cardEl.classList.remove('drag-target', 'drag-over-left', 'drag-over-right');
+            delete cardEl.dataset.dropSide;
             
             const draggedId = e.dataTransfer.getData('text/plain');
             if (draggedId && draggedId !== card.id && onReorder) {
-                onReorder(draggedId, card.id);
+                onReorder(draggedId, card.id, dropSide);
             }
         });
 

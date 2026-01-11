@@ -32,18 +32,17 @@ function isSameRankMeld(cards) {
  */
 export function calculateMeldScore(melds) {
     let score = 0;
+    let regularMeldPoints = 0;  // Card values from non-burraco melds (3-6 cards)
     let cleanBurracos = 0;
     let dirtyBurracos = 0;
     let sameRankBurracos = 0;
 
     for (const meld of melds) {
-        // Card values
-        score += calculateCardsValue(meld.cards);
+        const cardValue = calculateCardsValue(meld.cards);
 
-        // Burraco bonuses (mutually exclusive)
         if (meld.isBurraco) {
+            // Burraco meld (7+ cards) - ONLY bonus, no card values
             if (isSameRankMeld(meld.cards)) {
-                // Same rank burraco (e.g., 3333333) - counted separately
                 score += BONUSES.SAME_RANK_BURRACO;
                 sameRankBurracos++;
             } else if (meld.isClean) {
@@ -53,10 +52,20 @@ export function calculateMeldScore(melds) {
                 score += BONUSES.DIRTY_BURRACO;
                 dirtyBurracos++;
             }
+        } else {
+            // Regular meld (3-6 cards) - card values only
+            regularMeldPoints += cardValue;
+            score += cardValue;
         }
     }
 
-    return { score, cleanBurracos, dirtyBurracos, sameRankBurracos };
+    return { 
+        score, 
+        regularMeldPoints,
+        cleanBurracos, 
+        dirtyBurracos, 
+        sameRankBurracos 
+    };
 }
 
 /**
@@ -94,7 +103,7 @@ export function calculateTeamScore(team) {
 
     return {
         totalScore,
-        meldScore: meldResult.score,
+        regularMeldPoints: meldResult.regularMeldPoints,
         handPenalty: calculateHandPenalty(hands),
         cleanBurracos: meldResult.cleanBurracos,
         dirtyBurracos: meldResult.dirtyBurracos,

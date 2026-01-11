@@ -177,9 +177,9 @@ function populateTeamBreakdown(teamId, details, totalScore) {
         return;
     }
 
-    // Meld score (card values)
-    const meldScore = details.meldScore || 0;
-    document.getElementById(`meld-score-${teamId}`).textContent = meldScore;
+    // Regular Meld Points (non-burraco melds only: 3-6 cards)
+    const regularMeldPoints = details.regularMeldPoints || 0;
+    document.getElementById(`meld-score-${teamId}`).textContent = regularMeldPoints;
 
     // Same Rank Burracos
     const sameRankCount = details.sameRankBurracos || 0;

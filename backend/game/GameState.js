@@ -154,7 +154,7 @@ export default class GameState {
         }
 
         const card = this.drawPile.pop();
-        this.hands.get(socketId).push(card);
+        this.hands.get(socketId).unshift(card);  // Add to left side
 
         this.currentPhase = PHASES.MELD;
 
@@ -177,7 +177,7 @@ export default class GameState {
 
         const cards = [...this.discardPile];
         this.discardPile = [];
-        this.hands.get(socketId).push(...cards);
+        this.hands.get(socketId).unshift(...cards);  // Add to left side
 
         this.currentPhase = PHASES.MELD;
 
@@ -231,10 +231,16 @@ export default class GameState {
             hand.splice(idx, 1);
         }
 
+        // Sort sequence melds to place wild cards in correct positions
+        let sortedCards = cards;
+        if (validation.type === 'sequence') {
+            sortedCards = sortSequenceMeld(cards, validation.suit);
+        }
+
         // Add meld to team
         team.melds.push({
             id: `meld-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            cards,
+            cards: sortedCards,
             type: validation.type,
             rank: validation.rank,
             suit: validation.suit,

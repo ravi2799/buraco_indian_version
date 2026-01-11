@@ -86,7 +86,7 @@ class GameTableUI {
         this.meldBtn.addEventListener('click', () => this.handlePlayMeld());
 
         // Sort hand
-        this.sortHandBtn.addEventListener('click', () => this.renderPlayerHand());
+        this.sortHandBtn.addEventListener('click', () => this.sortAndRenderHand());
 
         // Game events
         gameClient.on('gameStateUpdate', (data) => {
@@ -236,31 +236,83 @@ class GameTableUI {
             onCardDragEnd: () => {
                 // draggedCardId is cleared after drop
             },
-            onReorder: (draggedId, targetId) => {
-                this.handleCardReorder(draggedId, targetId);
+            onReorder: (draggedId, targetId, dropSide) => {
+                this.handleCardReorder(draggedId, targetId, dropSide);
             }
         });
     }
 
     /**
-     * Handle card reordering in hand
+     * Adjust draw pile position based on discard pile card count
+     * Moves left by ~30px per card added to discard pile
      */
-    handleCardReorder(draggedId, targetId) {
+    adjustDrawPilePosition() {
+        if (!this.drawPile) return;
+
+        const discardCount = this.gameState?.discardPile?.length || 0;
+        
+        // Move left by 5px per card (after first card)
+        const offsetPerCard = 5;
+        const offset = Math.max(0, (discardCount - 1) * offsetPerCard);
+        
+        // Limit offset to not go beyond left edge of screen
+        const maxOffset = this.drawPile.getBoundingClientRect().left - 20;
+        const finalOffset = Math.min(offset, maxOffset);
+        
+        if (finalOffset > 0) {
+            this.drawPile.style.transform = `scale(0.8) translateX(-${finalOffset}px)`;
+        } else {
+            this.drawPile.style.transform = 'scale(0.8)';
+        }
+    }
+
+    /**
+     * Handle card reordering in hand
+     * @param {string} draggedId - ID of the card being dragged
+     * @param {string} targetId - ID of the card being dropped on
+     * @param {string} dropSide - 'left' or 'right' of target card
+     */
+    handleCardReorder(draggedId, targetId, dropSide = 'right') {
         // Get current order (either custom or from hand)
         const currentOrder = this.customCardOrder || this.gameState.hand.map(c => c.id);
 
         // Find positions
         const draggedIdx = currentOrder.indexOf(draggedId);
-        const targetIdx = currentOrder.indexOf(targetId);
+        let targetIdx = currentOrder.indexOf(targetId);
 
         if (draggedIdx === -1 || targetIdx === -1) return;
 
-        // Remove dragged card and insert at target position
+        // Remove dragged card first
         const newOrder = [...currentOrder];
         newOrder.splice(draggedIdx, 1);
-        newOrder.splice(targetIdx, 0, draggedId);
+
+        // Recalculate target index after removal
+        targetIdx = newOrder.indexOf(targetId);
+        
+        // Insert at correct position based on drop side
+        const insertIdx = dropSide === 'left' ? targetIdx : targetIdx + 1;
+        newOrder.splice(insertIdx, 0, draggedId);
 
         this.customCardOrder = newOrder;
+        this.renderPlayerHand();
+    }
+
+    /**
+     * Sort hand by suit then rank and render
+     */
+    sortAndRenderHand() {
+        if (!this.gameState?.hand) return;
+
+        const suitOrder = ['hearts', 'diamonds', 'clubs', 'spades', 'joker'];
+        const rankOrder = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'JOKER'];
+
+        const sortedCards = [...this.gameState.hand].sort((a, b) => {
+            const suitDiff = suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);
+            if (suitDiff !== 0) return suitDiff;
+            return rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank);
+        });
+
+        this.customCardOrder = sortedCards.map(c => c.id);
         this.renderPlayerHand();
     }
 
@@ -569,6 +621,9 @@ class GameTableUI {
 
         // Discard pile
         renderDiscardPile(this.discardPile, this.gameState.discardPile || []);
+
+        // Adjust draw pile position based on discard pile size
+        this.adjustDrawPilePosition();
     }
 
     /**
