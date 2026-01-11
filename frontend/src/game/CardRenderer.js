@@ -127,7 +127,7 @@ export function renderHand(container, cards, options = {}) {
         // Increase overlap as card count grows
         const extraCards = cardCount - 21;
         marginLeft = -10 - (extraCards * 3); // Tighter by 3px per extra card
-        marginLeft = Math.max(marginLeft, -50); // Cap at -50px
+        marginLeft = Math.max(marginLeft, -37); // Cap at -37px after 30 cards
     }
 
     for (let i = 0; i < displayCards.length; i++) {
