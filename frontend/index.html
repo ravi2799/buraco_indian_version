@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Play Buraco card game online with friends. Create a room and invite others with a code!">
+  <title>Buraco - Multiplayer Card Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@400;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles/main.css">
+  <link rel="stylesheet" href="/src/styles/cards.css">
+  <link rel="stylesheet" href="/src/styles/table.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- Lobby Screen -->
+    <div id="lobby-screen" class="screen active">
+      <div class="lobby-container">
+        <header class="lobby-header">
+          <h1 class="game-title">Buraco</h1>
+          <p class="subtitle">Classic Card Game</p>
+        </header>
+
+        <div class="lobby-content">
+          <div class="nickname-section">
+            <label for="nickname-input">Your Nickname</label>
+            <input type="text" id="nickname-input" placeholder="Enter your name" maxlength="20" autocomplete="off">
+          </div>
+
+          <div class="action-buttons">
+            <div class="create-room-section">
+              <h3>Create New Room</h3>
+              <div class="player-count-selector">
+                <button class="player-count-btn" data-count="2">2 Players</button>
+                <button class="player-count-btn selected" data-count="4">4 Players</button>
+                <button class="player-count-btn" data-count="6">6 Players</button>
+              </div>
+              <button id="create-room-btn" class="primary-btn">Create Room</button>
+            </div>
+
+            <div class="divider">
+              <span>OR</span>
+            </div>
+
+            <div class="join-room-section">
+              <h3>Join Room</h3>
+              <input type="text" id="room-code-input" placeholder="Enter room code" maxlength="6" autocomplete="off">
+              <button id="join-room-btn" class="secondary-btn">Join Room</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="error-message" class="error-message hidden"></div>
+      </div>
+    </div>
+
+    <!-- Waiting Room Screen -->
+    <div id="waiting-screen" class="screen">
+      <div class="waiting-container">
+        <h2>Waiting Room</h2>
+        <div class="room-code-display">
+          <span>Room Code:</span>
+          <strong id="display-room-code">------</strong>
+          <button id="copy-code-btn" class="icon-btn" title="Copy code">📋</button>
+        </div>
+
+        <div class="players-list">
+          <h3>Players (<span id="player-count">0</span>/<span id="max-players">4</span>)</h3>
+          <div id="players-container"></div>
+        </div>
+
+        <div class="waiting-actions">
+          <button id="start-game-btn" class="primary-btn" disabled>Start Game</button>
+          <button id="leave-room-btn" class="secondary-btn">Leave Room</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+      <div class="game-container">
+        <!-- Top status bar -->
+        <div class="game-status-bar">
+          <div class="turn-indicator">
+            <span id="current-turn">Waiting...</span>
+          </div>
+        </div>
+
+        <!-- Game table -->
+        <div class="game-table">
+          <!-- Other players' hands (shown as card backs) -->
+          <div id="opponents-area"></div>
+
+          <!-- Center table area -->
+          <!-- Melds area - Split View -->
+          <div class="melds-container">
+            <div id="team-a-melds" class="team-melds team-a-zone">
+              <div class="zone-header">
+                <h4>Team A</h4>
+                <span class="zone-points" id="team-a-zone-points">0 Pts.</span>
+              </div>
+              <div class="melds-grid"></div>
+            </div>
+
+            <div id="team-b-melds" class="team-melds team-b-zone">
+              <div class="zone-header">
+                <h4>Team B</h4>
+                <span class="zone-points" id="team-b-zone-points">0 Pts.</span>
+              </div>
+              <div class="melds-grid"></div>
+            </div>
+          </div>
+
+          <!-- Center Strip: Piles -->
+          <div class="piles-area">
+            <div id="draw-pile" class="pile draw-pile">
+              <div class="card-stack"></div>
+              <span id="draw-count">41</span>
+            </div>
+            <div id="discard-pile" class="pile discard-pile">
+              <div class="card-placeholder">Empty</div>
+            </div>
+          </div>
+
+          <!-- Pozzetti indicator (Bottom Left) -->
+          <div class="pozzetti-area">
+            <div id="pozzetto-1" class="pozzetto">
+              <div class="card-stack"></div>
+              <span>Pozzetto 1</span>
+              <span class="pozzetto-count" id="pozzetto-1-count">11 cards</span>
+            </div>
+            <div id="pozzetto-2" class="pozzetto">
+              <div class="card-stack"></div>
+              <span>Pozzetto 2</span>
+              <span class="pozzetto-count" id="pozzetto-2-count">11 cards</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player's hand -->
+        <div class="player-hand-area">
+          <div class="hand-controls">
+            <button id="sort-hand-btn" class="control-btn">Sort Hand</button>
+            <button id="meld-btn" class="control-btn" disabled>Play Meld</button>
+          </div>
+          <div id="player-hand" class="player-hand"></div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="action-bar">
+          <button id="draw-btn" class="action-btn" disabled>Draw Card</button>
+          <button id="take-discard-btn" class="action-btn" disabled>Take Discard</button>
+          <button id="discard-btn" class="action-btn" disabled>Discard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2 id="winner-text">Game Over!</h2>
+        <div class="final-scores">
+          <div class="score-row">
+            <span>Team A:</span>
+            <span id="final-score-a">0</span>
+          </div>
+          <div class="score-row">
+            <span>Team B:</span>
+            <span id="final-score-b">0</span>
+          </div>
+        </div>
+        <button id="back-to-lobby-btn" class="primary-btn">Back to Lobby</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

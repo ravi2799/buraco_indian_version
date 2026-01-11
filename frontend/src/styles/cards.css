@@ -1,0 +1,335 @@
+/* =============================================
+   Card Styles
+   ============================================= */
+
+:root {
+    --card-width: 70px;
+    --card-height: 100px;
+    --card-radius: 6px;
+}
+
+/* Playing Card Base */
+.card {
+    width: var(--card-width);
+    height: var(--card-height);
+    border-radius: var(--card-radius);
+    background: white;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+}
+
+.card.selected {
+    transform: translateY(-20px);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.5);
+    outline: 3px solid var(--gold);
+}
+
+.card.disabled {
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+.card.disabled:hover {
+    transform: none;
+}
+
+/* Card Face */
+.card-face {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 4px 6px;
+    border-radius: var(--card-radius);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+    border: 1px solid #ddd;
+}
+
+/* Card Colors */
+.card.hearts .card-face,
+.card.diamonds .card-face {
+    color: #c41e3a;
+}
+
+.card.clubs .card-face,
+.card.spades .card-face {
+    color: #1a1a1a;
+}
+
+.card.joker .card-face {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    color: white;
+}
+
+/* Card Corners */
+.card-corner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+}
+
+.card-corner.top {
+    align-self: flex-start;
+}
+
+.card-corner.bottom {
+    align-self: flex-end;
+    transform: rotate(180deg);
+}
+
+.card-rank {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Georgia', serif;
+}
+
+.card-suit-small {
+    font-size: 12px;
+}
+
+/* Card Center */
+.card-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 28px;
+}
+
+/* Suit Symbols */
+.suit-hearts::after {
+    content: '♥';
+}
+
+.suit-diamonds::after {
+    content: '♦';
+}
+
+.suit-clubs::after {
+    content: '♣';
+}
+
+.suit-spades::after {
+    content: '♠';
+}
+
+/* Joker special styling */
+.card.joker .card-center {
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Card Back */
+.card-back {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--card-radius);
+    background:
+        linear-gradient(45deg, #1a472a 25%, transparent 25%),
+        linear-gradient(-45deg, #1a472a 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1a472a 75%),
+        linear-gradient(-45deg, transparent 75%, #1a472a 75%);
+    background-size: 10px 10px;
+    background-color: #2d5a3f;
+    border: 3px solid #8b4513;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.card-back::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--gold-dark);
+    border-radius: 50%;
+}
+
+.card-back::after {
+    content: 'B';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--gold);
+}
+
+/* Mini card (for opponent hands) */
+.card.mini {
+    width: 35px;
+    height: 50px;
+}
+
+.card.mini .card-back::before {
+    width: 20px;
+    height: 20px;
+}
+
+.card.mini .card-back::after {
+    font-size: 10px;
+}
+
+/* Card Stack (for piles) */
+.card-stack {
+    position: relative;
+    width: var(--card-width);
+    height: var(--card-height);
+}
+
+.card-stack .card {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.card-stack .card:nth-child(2) {
+    top: 2px;
+    left: 2px;
+}
+
+.card-stack .card:nth-child(3) {
+    top: 4px;
+    left: 4px;
+}
+
+/* Fanned hand */
+.hand-fan {
+    display: flex;
+    justify-content: center;
+    padding: 10px 20px;
+}
+
+.hand-fan .card {
+    margin-left: -30px;
+    transition: transform var(--transition-fast), margin var(--transition-fast);
+}
+
+.hand-fan .card:first-child {
+    margin-left: 0;
+}
+
+.hand-fan:hover .card {
+    margin-left: -20px;
+}
+
+.hand-fan:hover .card:first-child {
+    margin-left: 0;
+}
+
+/* Meld display */
+.meld {
+    display: flex;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 8px;
+    border: 2px solid var(--wood-brown);
+    gap: 2px;
+}
+
+.meld.burraco {
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.meld.clean {
+    border-color: #4ade80;
+}
+
+.meld.clickable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.meld.clickable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+    border-color: #d4af37;
+}
+
+.meld .card {
+    width: 50px;
+    height: 72px;
+    cursor: default;
+}
+
+.meld .card:hover {
+    transform: none;
+}
+
+.meld .card .card-rank {
+    font-size: 11px;
+}
+
+.meld .card .card-suit-small {
+    font-size: 9px;
+}
+
+.meld .card .card-center {
+    font-size: 18px;
+}
+
+/* Burraco indicator - crossed cards */
+.meld.burraco .card:last-child {
+    transform: rotate(10deg);
+    margin-left: -20px;
+}
+
+.meld.burraco.clean .card:nth-last-child(2) {
+    transform: rotate(-5deg);
+    margin-left: -15px;
+}
+
+/* Animation for dealing cards */
+@keyframes dealCard {
+    from {
+        opacity: 0;
+        transform: translate(-100px, -100px) rotate(-180deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(0, 0) rotate(0);
+    }
+}
+
+.card.dealing {
+    animation: dealCard 0.5s ease-out forwards;
+}
+
+/* Flip animation */
+@keyframes flipCard {
+    0% {
+        transform: rotateY(0);
+    }
+
+    50% {
+        transform: rotateY(90deg);
+    }
+
+    100% {
+        transform: rotateY(0);
+    }
+}
+
+.card.flipping {
+    animation: flipCard 0.4s ease-in-out;
+}
