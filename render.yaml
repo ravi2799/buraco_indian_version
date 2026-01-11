@@ -12,13 +12,13 @@ services:
       - key: PORT
         value: 3001
 
-  # Frontend - Static site
+  # Frontend - Static site (built with Vite)
   - type: web
     name: buraco-frontend
     env: static
     rootDir: frontend
-    buildCommand: echo "No build needed"
-    staticPublishPath: .
+    buildCommand: npm install && npm run build && cp config.js dist/ && cp -r assets dist/
+    staticPublishPath: dist
     headers:
       - path: /*
         name: Cache-Control
