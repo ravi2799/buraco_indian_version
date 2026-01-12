@@ -64,6 +64,13 @@ io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
     /**
+     * Keep-alive ping handler - prevents Render from killing the connection
+     */
+    socket.on('ping', () => {
+        socket.emit('pong');
+    });
+
+    /**
      * Create a new room
      */
     socket.on('createRoom', ({ nickname, maxPlayers, avatarId, roomConfig }, callback) => {

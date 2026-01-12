@@ -22,11 +22,15 @@ class GameClient {
     connect() {
         return new Promise((resolve, reject) => {
             this.socket = io(BACKEND_URL, {
-                transports: ['websocket', 'polling']
+                transports: ['websocket', 'polling'],
+                pingInterval: 10000,  // Ping every 10 seconds
+                pingTimeout: 5000
             });
 
             this.socket.on('connect', () => {
                 console.log('Connected to server');
+                // Start keep-alive ping to prevent Render from killing connection
+                this.startKeepAlive();
                 resolve();
             });
 
@@ -253,9 +257,30 @@ class GameClient {
     }
 
     /**
+     * Start keep-alive ping to prevent Render from killing the connection
+     */
+    startKeepAlive() {
+        // Clear any existing interval
+        if (this.keepAliveInterval) {
+            clearInterval(this.keepAliveInterval);
+        }
+        
+        // Ping server every 30 seconds to keep connection alive
+        this.keepAliveInterval = setInterval(() => {
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('ping');
+            }
+        }, 30000);
+    }
+
+    /**
      * Disconnect from server
      */
     disconnect() {
+        if (this.keepAliveInterval) {
+            clearInterval(this.keepAliveInterval);
+            this.keepAliveInterval = null;
+        }
         if (this.socket) {
             this.socket.disconnect();
             this.socket = null;
