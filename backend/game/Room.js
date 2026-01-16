@@ -9,9 +9,9 @@ import GameState from './GameState.js';
  * Generate a random 6-character room code
  */
 function generateRoomCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const chars = '123456789';
     let code = '';
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 3; i++) {
         code += chars[Math.floor(Math.random() * chars.length)];
     }
     return code;
@@ -33,7 +33,7 @@ export default class Room {
         // Room configuration with defaults
         this.config = {
             turnTimer: roomConfig.turnTimer ?? 60,      // seconds (0 = disabled)
-            deckCount: roomConfig.deckCount ?? 2,       // number of decks
+            deckCount: roomConfig.deckCount ?? 3,       // number of decks
             jokersPerDeck: roomConfig.jokersPerDeck ?? 2 // jokers per deck
         };
 

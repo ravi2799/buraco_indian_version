@@ -52,7 +52,7 @@
     justify-content: space-between;
     padding: 4px 6px;
     border-radius: var(--card-radius);
-    background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+    background: linear-gradient(135deg, #f5efe6 0%, #c8a97e 100%);
     border: 1px solid #ddd;
 }
 
@@ -232,7 +232,7 @@
 }
 
 .hand-fan:hover .card:first-child {
-margin-left: 0;
+    margin-left: 0;
 }
 
 /* Meld display - Vertical stack with overlapping cards showing ranks */
@@ -250,47 +250,47 @@ margin-left: 0;
 
 /* Meld label (Clean/Dirty) */
 .meld-label {
-position: absolute;
-top: -22px;
-left: 50%;
-transform: translateX(-50%);
-font-size: 0.65rem;
-font-weight: 700;
-padding: 2px 6px;
-border-radius: 4px;
-white-space: nowrap;
-z-index: 20;
-text-transform: uppercase;
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 20;
+    text-transform: uppercase;
 }
 
 .meld.clean .meld-label {
-background: #4ade80;
-color: #000;
+    background: #4ade80;
+    color: #000;
 }
 
 .meld.burraco:not(.clean) .meld-label {
-background: #e879f9;
-color: #000;
+    background: #e879f9;
+    color: #000;
 }
 
 .meld.burraco {
-border-left: 3px solid var(--gold);
-padding-left: 2px;
+    border-left: 3px solid var(--gold);
+    padding-left: 2px;
 }
 
 .meld.clean {
-border-left: 3px solid #4ade80;
-padding-left: 2px;
+    border-left: 3px solid #4ade80;
+    padding-left: 2px;
 }
 
 .meld.clickable {
-cursor: pointer;
-transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .meld.clickable:hover {
-transform: scale(1.02);
-box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+    transform: scale(1.02);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 }
 
 /* Meld cards - Vertical overlap showing rank of each card */
@@ -298,14 +298,16 @@ box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
     width: 60px;
     height: 84px;
     cursor: default;
-    margin-bottom: -54px; /* Show ~30px of each card (rank + suit) */
+    margin-bottom: -54px;
+    /* Show ~30px of each card (rank + suit) */
     transition: transform 0.15s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     flex-shrink: 0;
 }
 
 .meld .card:last-child {
-    margin-bottom: 0; /* Last card fully visible */
+    margin-bottom: 0;
+    /* Last card fully visible */
 }
 
 .meld .card .card-rank {
@@ -328,7 +330,8 @@ box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 .melds-grid.medium .meld .card {
     width: 50px;
     height: 70px;
-    margin-bottom: -44px; /* Show ~26px of each card (rank + suit) */
+    margin-bottom: -44px;
+    /* Show ~26px of each card (rank + suit) */
 }
 
 .melds-grid.medium .meld .card:last-child {
@@ -351,7 +354,8 @@ box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 .melds-grid.compact .meld .card {
     width: 44px;
     height: 62px;
-    margin-bottom: -40px; /* Show ~22px of each card (rank + suit) */
+    margin-bottom: -40px;
+    /* Show ~22px of each card (rank + suit) */
 }
 
 .melds-grid.compact .meld .card:last-child {
@@ -374,7 +378,8 @@ box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 .melds-grid.x-compact .meld .card {
     width: 38px;
     height: 54px;
-    margin-bottom: -36px; /* Show ~18px of each card (rank + suit) */
+    margin-bottom: -36px;
+    /* Show ~18px of each card (rank + suit) */
 }
 
 .melds-grid.x-compact .meld .card:last-child {
@@ -397,7 +402,8 @@ box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 .melds-grid.two-rows .meld .card {
     width: 44px;
     height: 62px;
-    margin-bottom: -40px; /* Show ~22px of each card (rank + suit) */
+    margin-bottom: -40px;
+    /* Show ~22px of each card (rank + suit) */
 }
 
 .melds-grid.two-rows .meld .card:last-child {
@@ -503,8 +509,15 @@ box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 }
 
 @keyframes pulse-glow {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .card.drag-target {

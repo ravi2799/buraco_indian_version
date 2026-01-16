@@ -250,15 +250,15 @@ class GameTableUI {
         if (!this.drawPile) return;
 
         const discardCount = this.gameState?.discardPile?.length || 0;
-        
+
         // Move left by 5px per card (after first card)
         const offsetPerCard = 5;
         const offset = Math.max(0, (discardCount - 1) * offsetPerCard);
-        
+
         // Limit offset to not go beyond left edge of screen
         const maxOffset = this.drawPile.getBoundingClientRect().left - 20;
         const finalOffset = Math.min(offset, maxOffset);
-        
+
         if (finalOffset > 0) {
             this.drawPile.style.transform = `scale(0.8) translateX(-${finalOffset}px)`;
         } else {
@@ -288,7 +288,7 @@ class GameTableUI {
 
         // Recalculate target index after removal
         targetIdx = newOrder.indexOf(targetId);
-        
+
         // Insert at correct position based on drop side
         const insertIdx = dropSide === 'left' ? targetIdx : targetIdx + 1;
         newOrder.splice(insertIdx, 0, draggedId);
@@ -626,6 +626,14 @@ class GameTableUI {
         this.adjustDrawPilePosition();
     }
 
+    getTeamPlayerNames(team) {
+        const players = this.gameState?.players || [];
+        return players
+            .filter(p => p.team === team)
+            .map(p => p.nickname)
+            .join(', ');
+    }
+
     /**
      * Render team melds - my team always on left side
      */
@@ -644,11 +652,15 @@ class GameTableUI {
         const leftTeam = this.myTeam || 'A';
         const rightTeam = leftTeam === 'A' ? 'B' : 'A';
 
+        // Names for each team
+        const leftNames = this.getTeamPlayerNames(leftTeam);
+        const rightNames = this.getTeamPlayerNames(rightTeam);
+
         // Update zone headers
         const leftHeader = this.teamAMelds.querySelector('.zone-header h4');
         const rightHeader = this.teamBMelds.querySelector('.zone-header h4');
-        if (leftHeader) leftHeader.textContent = `Team ${leftTeam} (You)`;
-        if (rightHeader) rightHeader.textContent = `Team ${rightTeam}`;
+        if (leftHeader) leftHeader.textContent = `Team ${leftTeam} (You) — ${leftNames}`;
+        if (rightHeader) rightHeader.textContent = `Team ${rightTeam} - ${rightNames}`;
 
         // Render melds: left container = my team, right container = opponent team
         renderTeamMelds(this.teamAMelds, this.gameState.teamsMelds[leftTeam] || [], {
@@ -741,10 +753,18 @@ class GameTableUI {
      * Update action button states
      */
     updateActionButtons() {
+        const handCount = this.gameState?.hand?.length || 0
+        const selectedCount = this.selectedCards.size;
+        const leavesAtLeastOneCard = (handCount - selectedCount) >= 1;
+
+
         const canDraw = this.isMyTurn && this.currentPhase === 'draw';
-        const canMeld = this.isMyTurn && (this.currentPhase === 'meld' || this.currentPhase === 'discard');
+        const canMeldPhase = this.isMyTurn && (this.currentPhase === 'meld' || this.currentPhase === 'discard');
+
         const canDiscard = this.isMyTurn && this.currentPhase !== 'draw' && this.selectedCards.size === 1;
-        const canPlayMeld = this.isMyTurn && canMeld && this.selectedCards.size >= 3;
+
+        // Must be >= 3 AND must leave at least 1 card in hand
+        const canPlayMeld = canMeldPhase && selectedCount >= 3 && leavesAtLeastOneCard;
 
         this.drawBtn.disabled = !canDraw;
         this.takeDiscardBtn.disabled = !canDraw || (this.gameState.discardPile?.length === 0);

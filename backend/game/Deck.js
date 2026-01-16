@@ -30,10 +30,10 @@ function createCard(suit, rank, deckIndex) {
 
 /**
  * Create a configurable deck
- * @param {number} deckCount - Number of standard 52-card decks (default 2)
+ * @param {number} deckCount - Number of standard 52-card decks (default 3)
  * @param {number} jokersPerDeck - Number of jokers per deck (default 2)
  */
-export function createDeck(deckCount = 2, jokersPerDeck = 2) {
+export function createDeck(deckCount = 3, jokersPerDeck = 2) {
   const deck = [];
 
   // Create copies of the standard deck
@@ -67,11 +67,11 @@ export function shuffle(deck) {
 /**
  * Deal cards for a game
  * @param {number} playerCount - Number of players (2, 4, or 6)
- * @param {number} deckCount - Number of decks to use (default 2)
+ * @param {number} deckCount - Number of decks to use (default 3)
  * @param {number} jokersPerDeck - Jokers per deck (default 2)
  * @returns {object} - { hands, pozzetti, drawPile, discardPile }
  */
-export function dealCards(playerCount, deckCount = 2, jokersPerDeck = 2) {
+export function dealCards(playerCount, deckCount = 3, jokersPerDeck = 2) {
   const deck = shuffle(createDeck(deckCount, jokersPerDeck));
 
   const hands = [];

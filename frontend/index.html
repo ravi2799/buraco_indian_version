@@ -85,8 +85,8 @@
                 <div class="config-row">
                   <label>Decks</label>
                   <div class="config-selector">
-                    <button class="config-btn selected" data-decks="2">2</button>
-                    <button class="config-btn" data-decks="3">3</button>
+                    <button class="config-btn" data-decks="2">2</button>
+                    <button class="config-btn selected" data-decks="3">3</button>
                     <button class="config-btn" data-decks="4">4</button>
                   </div>
                 </div>
@@ -132,8 +132,8 @@
         <!-- Room Configuration Display -->
         <div class="room-config-display" id="room-config-display">
           <div class="config-item"><span>Timer:</span> <strong id="config-timer">60s</strong></div>
-          <div class="config-item"><span>Decks:</span> <strong id="config-decks">2</strong></div>
-          <div class="config-item"><span>Jokers/Deck:</span> <strong id="config-jokers">2</strong></div>
+          <div class="config-item"><span>Decks:</span> <strong id="config-decks"></strong></div>
+          <div class="config-item"><span>Jokers/Deck:</span> <strong id="config-jokers"></strong></div>
         </div>
 
         <div class="players-list">
@@ -245,7 +245,7 @@
     <div id="game-over-modal" class="modal hidden">
       <div class="modal-content game-over-content">
         <h2 id="winner-text">Game Over!</h2>
-        
+
         <div class="score-cards-container">
           <!-- Team A Card -->
           <div class="score-card team-a-card">
