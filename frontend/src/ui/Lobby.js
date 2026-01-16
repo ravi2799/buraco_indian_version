@@ -126,7 +126,7 @@ class LobbyUI {
         if (!nickname) return;
 
         const roomCode = this.roomCodeInput.value.trim().toUpperCase();
-        if (!roomCode || roomCode.length !== 6) {
+        if (!roomCode) {
             this.showError('Please enter a valid 6-character room code');
             return;
         }
