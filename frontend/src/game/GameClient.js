@@ -70,11 +70,17 @@ class GameClient {
             this.emit('gameOver', data);
         });
 
+        // Player action animations (draw, take discard, take pozzetto)
+        this.socket.on('playerAction', (data) => {
+            this.emit('playerAction', data);
+        });
+
         this.socket.on('disconnect', () => {
             console.log('Disconnected from server');
             this.emit('disconnected');
         });
     }
+
 
     /**
      * Event emitter methods
@@ -264,7 +270,7 @@ class GameClient {
         if (this.keepAliveInterval) {
             clearInterval(this.keepAliveInterval);
         }
-        
+
         // Ping server every 30 seconds to keep connection alive
         this.keepAliveInterval = setInterval(() => {
             if (this.socket && this.socket.connected) {

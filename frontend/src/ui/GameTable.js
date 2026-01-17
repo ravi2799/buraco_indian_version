@@ -98,7 +98,129 @@ class GameTableUI {
                 this.onGameOver(data.result);
             }
         });
+
+        // Player action animations
+        gameClient.on('playerAction', (data) => {
+            this.showActionAnimation(data);
+        });
     }
+
+    /**
+     * Show visual animation for player actions (draw, take discard, take pozzetto)
+     */
+    showActionAnimation(action) {
+        const { type, playerNickname, cardCount } = action;
+        const isMe = playerNickname === this.gameState?.myNickname;
+
+        // Get icon and description based on action type
+        let icon = '🃏';
+        let desc = '';
+        let sourceElement = null;
+
+        switch (type) {
+            case 'drawFromPile':
+                icon = '📥';
+                desc = 'drew a card';
+                sourceElement = this.drawPile;
+                break;
+            case 'takeDiscardPile':
+                icon = '🎴';
+                desc = `took ${cardCount} cards from discard`;
+                sourceElement = this.discardPile;
+                break;
+            case 'takePozzetto':
+                icon = '🎁';
+                desc = `took the pozzetto (${cardCount} cards)`;
+                sourceElement = this.pozzetto1?.classList.contains('taken') ? this.pozzetto2 : this.pozzetto1;
+                break;
+            default:
+                return;
+        }
+
+        // Add glow effect to source pile
+        if (sourceElement) {
+            if (type === 'drawFromPile') {
+                this.drawPile.classList.add('drawing');
+                setTimeout(() => this.drawPile.classList.remove('drawing'), 400);
+            } else if (type === 'takeDiscardPile') {
+                this.discardPile.classList.add('taking');
+                setTimeout(() => this.discardPile.classList.remove('taking'), 400);
+            } else if (type === 'takePozzetto') {
+                sourceElement?.classList.add('taking');
+                setTimeout(() => sourceElement?.classList.remove('taking'), 600);
+            }
+        }
+
+        // Create flying cards animation
+        if (sourceElement && type !== 'drawFromPile') {
+            this.createFlyingCards(sourceElement, cardCount, isMe);
+        } else if (type === 'drawFromPile') {
+            this.createFlyingCards(this.drawPile, 1, isMe);
+        }
+
+        // Show action toast (skip for self on simple draw)
+        if (!isMe || type !== 'drawFromPile') {
+            this.showActionToast(icon, playerNickname, desc, isMe);
+        }
+    }
+
+    /**
+     * Create flying card animation from source to player position
+     */
+    createFlyingCards(sourceElement, count, isMe) {
+        if (!sourceElement) return;
+
+        const rect = sourceElement.getBoundingClientRect();
+        const cardsToAnimate = Math.min(count, 5); // Max 5 cards for performance
+
+        // Create container if not exists
+        let container = document.querySelector('.flying-card-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'flying-card-container';
+            document.body.appendChild(container);
+        }
+
+        for (let i = 0; i < cardsToAnimate; i++) {
+            setTimeout(() => {
+                const card = document.createElement('div');
+                card.className = 'flying-card';
+                card.style.left = `${rect.left + rect.width / 2 - 35}px`;
+                card.style.top = `${rect.top + rect.height / 2 - 50}px`;
+                card.style.animation = isMe ? 'flyToBottom 0.6s ease-out forwards' : 'flyToTop 0.6s ease-out forwards';
+                container.appendChild(card);
+
+                // Remove after animation
+                setTimeout(() => card.remove(), 600);
+            }, i * 80); // Stagger cards
+        }
+    }
+
+    /**
+     * Show action toast notification
+     */
+    showActionToast(icon, playerName, desc, isMe) {
+        // Remove existing toast
+        const existing = document.querySelector('.action-toast-container');
+        if (existing) existing.remove();
+
+        const container = document.createElement('div');
+        container.className = 'action-toast-container';
+        container.innerHTML = `
+            <div class="action-toast">
+                <span class="toast-icon">${icon}</span>
+                <div class="toast-text">
+                    <span class="player-name">${isMe ? 'You' : playerName}</span>
+                    <span class="action-desc">${desc}</span>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(container);
+
+        // Remove after animation (2s total)
+        setTimeout(() => container.remove(), 2000);
+    }
+
 
     /**
      * Setup drag and drop for discarding cards
@@ -159,6 +281,13 @@ class GameTableUI {
         this.selectedCards.clear();
         this.lastCurrentPlayer = null; // Reset for new game
 
+        // Initialize custom card order with initial hand
+        if (gameState.hand && gameState.hand.length > 0) {
+            this.customCardOrder = gameState.hand.map(c => c.id);
+        } else {
+            this.customCardOrder = null;
+        }
+
         // Apply room config (timer settings)
         if (gameState.config) {
             this.turnDuration = gameState.config.turnTimer || 60;
@@ -178,13 +307,51 @@ class GameTableUI {
         }
     }
 
+
     /**
      * Update game state and re-render
+     * Preserves custom card order across state updates
      */
     updateGameState(gameState) {
+        const oldHand = this.gameState?.hand || [];
         this.gameState = gameState;
         this.selectedCards.clear();
+
+        // Preserve custom card order when hand changes
+        this.updateCustomCardOrder(oldHand, gameState.hand || []);
+
         this.renderAll();
+    }
+
+    /**
+     * Update custom card order to handle added/removed cards
+     * New cards are added to the left, removed cards are filtered out
+     */
+    updateCustomCardOrder(oldHand, newHand) {
+        if (!newHand || newHand.length === 0) {
+            this.customCardOrder = null;
+            return;
+        }
+
+        const newCardIds = new Set(newHand.map(c => c.id));
+        const oldCardIds = new Set(oldHand.map(c => c.id));
+
+        // Find new cards (cards in new hand but not in old hand)
+        const addedCardIds = newHand
+            .filter(c => !oldCardIds.has(c.id))
+            .map(c => c.id);
+
+        // If no custom order exists, create one from current hand
+        if (!this.customCardOrder) {
+            this.customCardOrder = newHand.map(c => c.id);
+            return;
+        }
+
+        // Filter out removed cards from existing order
+        const filteredOrder = this.customCardOrder.filter(id => newCardIds.has(id));
+
+        // Add new cards to the LEFT (beginning) of the order
+        this.customCardOrder = [...addedCardIds, ...filteredOrder];
     }
 
     /**
@@ -273,27 +440,46 @@ class GameTableUI {
      * @param {string} dropSide - 'left' or 'right' of target card
      */
     handleCardReorder(draggedId, targetId, dropSide = 'right') {
-        // Get current order (either custom or from hand)
-        const currentOrder = this.customCardOrder || this.gameState.hand.map(c => c.id);
+        if (!this.gameState?.hand || this.gameState.hand.length === 0) return;
+        if (draggedId === targetId) return; // Can't drop on self
+
+        // Ensure we have a valid custom order
+        if (!this.customCardOrder) {
+            this.customCardOrder = this.gameState.hand.map(c => c.id);
+        }
+
+        // Get current order
+        const currentOrder = [...this.customCardOrder];
 
         // Find positions
         const draggedIdx = currentOrder.indexOf(draggedId);
-        let targetIdx = currentOrder.indexOf(targetId);
+        const originalTargetIdx = currentOrder.indexOf(targetId);
 
-        if (draggedIdx === -1 || targetIdx === -1) return;
+        // Validate indices
+        if (draggedIdx === -1) {
+            console.warn('Dragged card not found in order:', draggedId);
+            return;
+        }
+        if (originalTargetIdx === -1) {
+            console.warn('Target card not found in order:', targetId);
+            return;
+        }
 
         // Remove dragged card first
-        const newOrder = [...currentOrder];
-        newOrder.splice(draggedIdx, 1);
+        currentOrder.splice(draggedIdx, 1);
 
         // Recalculate target index after removal
-        targetIdx = newOrder.indexOf(targetId);
+        const newTargetIdx = currentOrder.indexOf(targetId);
+        if (newTargetIdx === -1) {
+            console.warn('Target card lost after removal');
+            return;
+        }
 
         // Insert at correct position based on drop side
-        const insertIdx = dropSide === 'left' ? targetIdx : targetIdx + 1;
-        newOrder.splice(insertIdx, 0, draggedId);
+        const insertIdx = dropSide === 'left' ? newTargetIdx : newTargetIdx + 1;
+        currentOrder.splice(insertIdx, 0, draggedId);
 
-        this.customCardOrder = newOrder;
+        this.customCardOrder = currentOrder;
         this.renderPlayerHand();
     }
 

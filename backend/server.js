@@ -227,7 +227,19 @@ io.on('connection', (socket) => {
      */
     socket.on('drawFromPile', (callback) => {
         handleGameAction(socket, callback, (room) => {
-            return room.game.drawFromPile(socket.id);
+            const result = room.game.drawFromPile(socket.id);
+            if (result.success) {
+                // Get player info for animation
+                const player = room.players.get(socket.id);
+                // Emit animation event to all players
+                io.to(room.code).emit('playerAction', {
+                    type: 'drawFromPile',
+                    playerNickname: player?.nickname || 'Player',
+                    playerSeat: player?.seat,
+                    cardCount: 1
+                });
+            }
+            return result;
         });
     });
 
@@ -236,9 +248,21 @@ io.on('connection', (socket) => {
      */
     socket.on('takeDiscardPile', (callback) => {
         handleGameAction(socket, callback, (room) => {
-            return room.game.takeDiscardPile(socket.id);
+            const discardCount = room.game.discardPile?.length || 0;
+            const result = room.game.takeDiscardPile(socket.id);
+            if (result.success) {
+                const player = room.players.get(socket.id);
+                io.to(room.code).emit('playerAction', {
+                    type: 'takeDiscardPile',
+                    playerNickname: player?.nickname || 'Player',
+                    playerSeat: player?.seat,
+                    cardCount: result.cards?.length || discardCount
+                });
+            }
+            return result;
         });
     });
+
 
     /**
      * Play a new meld
