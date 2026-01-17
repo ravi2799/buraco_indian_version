@@ -146,6 +146,11 @@ app.post('/api/room/create', (req, res) => {
             return res.json({ success: false, reason: 'Invalid player count' });
         }
 
+        // Limit concurrent rooms for low memory (512MB)
+        if (rooms.size >= 2) {
+            return res.json({ success: false, reason: 'Server busy, please try again later' });
+        }
+
         const room = new Room(playerId, nickname.trim(), avatarId, maxPlayers, roomConfig);
         rooms.set(room.code, room);
         sessionJoinRoom(playerId, room.code, nickname.trim(), avatarId);
@@ -324,11 +329,20 @@ function handleGameAction(playerId, action) {
             });
         }
 
-        // If game is over, send result
+        // If game is over, send result and schedule cleanup
         if (result.gameOver || room.game.isGameOver) {
             broadcastToRoom(roomCode, 'gameOver', {
                 result: room.game.getGameResult()
             });
+
+            // Clear game state after 2 minutes to free memory (players can view results)
+            setTimeout(() => {
+                if (rooms.has(roomCode)) {
+                    const r = rooms.get(roomCode);
+                    r.game = null; // Clear heavy game state
+                    console.log(`Cleared game state for room ${roomCode}`);
+                }
+            }, 2 * 60 * 1000);
         }
     }
 
@@ -509,7 +523,7 @@ if (process.env.NODE_ENV === 'production') {
  */
 setInterval(() => {
     const now = Date.now();
-    const staleTimeout = 2 * 60 * 60 * 1000; // 2 hours
+    const staleTimeout = 10 * 60 * 1000; // 30 minutes (optimized for low memory)
 
     for (const [code, room] of rooms) {
         if (now - room.createdAt > staleTimeout && room.players.size === 0) {
@@ -520,7 +534,7 @@ setInterval(() => {
 
     // Cleanup stale player sessions
     cleanupStaleSessions();
-}, 30 * 60 * 1000); // Check every 30 minutes
+}, 10 * 60 * 1000); // Check every 10 minutes (optimized for low memory)
 
 /**
  * Start server

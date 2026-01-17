@@ -3,13 +3,26 @@
  * Creates and manages card DOM elements
  */
 
-const SUIT_SYMBOLS = {
-    hearts: '♥',
-    diamonds: '♦',
-    clubs: '♣',
-    spades: '♠',
-    joker: '★'
+const SUIT_CODES = {
+    hearts: 'H',
+    diamonds: 'D',
+    clubs: 'C',
+    spades: 'S'
 };
+
+/**
+ * Get the image filename for a card
+ */
+function getCardImagePath(card) {
+    if (card.rank === 'JOKER') {
+        return '/assets/cards/JOKER.png';
+    }
+    
+    const suitCode = SUIT_CODES[card.suit];
+    const rankCode = card.rank === '10' ? '10' : card.rank;
+    
+    return `/assets/cards/${rankCode}${suitCode}.svg`;
+}
 
 /**
  * Create a card DOM element
@@ -34,39 +47,11 @@ export function createCardElement(card, options = {}) {
 }
 
 /**
- * Create HTML for card face
+ * Create HTML for card face using real card images
  */
 function createCardFaceHTML(card) {
-    if (card.rank === 'JOKER') {
-        return `
-      <div class="card-face">
-        <div class="card-corner top">
-          <span class="card-rank">★</span>
-        </div>
-        <div class="card-center">JOKER</div>
-        <div class="card-corner bottom">
-          <span class="card-rank">★</span>
-        </div>
-      </div>
-    `;
-    }
-
-    const suitSymbol = SUIT_SYMBOLS[card.suit];
-    const displayRank = card.rank === '10' ? '10' : card.rank;
-
-    return `
-    <div class="card-face">
-      <div class="card-corner top">
-        <span class="card-rank">${displayRank}</span>
-        <span class="card-suit-small">${suitSymbol}</span>
-      </div>
-      <div class="card-center">${suitSymbol}</div>
-      <div class="card-corner bottom">
-        <span class="card-rank">${displayRank}</span>
-        <span class="card-suit-small">${suitSymbol}</span>
-      </div>
-    </div>
-  `;
+    const imagePath = getCardImagePath(card);
+    return `<img class="card-image" src="${imagePath}" alt="${card.rank} of ${card.suit}" draggable="false">`;
 }
 
 /**
@@ -75,7 +60,7 @@ function createCardFaceHTML(card) {
 export function createCardBackElement(mini = false) {
     const cardEl = document.createElement('div');
     cardEl.className = 'card' + (mini ? ' mini' : '');
-    cardEl.innerHTML = '<div class="card-back"></div>';
+    cardEl.innerHTML = '<img class="card-image card-back-img" src="/assets/cards/RED_BACK.svg" alt="Card back" draggable="false">';
     return cardEl;
 }
 

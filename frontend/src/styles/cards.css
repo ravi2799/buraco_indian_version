@@ -56,6 +56,19 @@
     border: 1px solid #ddd;
 }
 
+/* Card Image (for SVG card images) */
+.card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: var(--card-radius);
+    pointer-events: none;
+}
+
+.card-back-img {
+    object-fit: cover;
+}
+
 /* Card Colors */
 .card.hearts .card-face,
 .card.diamonds .card-face {
@@ -573,14 +586,7 @@
     width: var(--card-width);
     height: var(--card-height);
     border-radius: var(--card-radius);
-    background:
-        linear-gradient(45deg, #1a472a 25%, transparent 25%),
-        linear-gradient(-45deg, #1a472a 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #1a472a 75%),
-        linear-gradient(-45deg, transparent 75%, #1a472a 75%);
-    background-size: 10px 10px;
-    background-color: #2d5a3f;
-    border: 3px solid #8b4513;
+    background: url('/assets/cards/RED_BACK.svg') center/cover no-repeat;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     z-index: 1001;
 }

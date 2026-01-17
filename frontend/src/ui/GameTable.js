@@ -936,6 +936,75 @@ class GameTableUI {
     }
 
     /**
+     * Check if selected cards form a valid meld
+     * Rules:
+     * - Minimum 3 cards, maximum 7 cards
+     * - Maximum 1 joker per meld
+     * - Same rank meld: A A A or A A JOKER (same rank, different suits)
+     * - Sequence meld: A K Q or JOKER A K Q (same suit, consecutive ranks)
+     * - Ace can be high (A-K-Q) or low (A-2-3)
+     */
+    isValidMeld(cardIds) {
+        if (cardIds.length < 3 || cardIds.length > 7) return false;
+
+        const cards = cardIds.map(id =>
+            this.gameState.hand.find(c => c.id === id)
+        ).filter(Boolean);
+
+        if (cards.length < 3) return false;
+
+        // Separate jokers and natural cards
+        const jokers = cards.filter(c => c.rank === 'JOKER');
+        const natural = cards.filter(c => c.rank !== 'JOKER');
+
+        // Maximum 1 joker per meld
+        if (jokers.length > 1) return false;
+
+        // Need at least 2 natural cards
+        if (natural.length < 2) return false;
+
+        // Check if same rank meld (e.g., A A A or A A JOKER)
+        const firstRank = natural[0].rank;
+        const allSameRank = natural.every(c => c.rank === firstRank);
+
+        if (allSameRank) {
+            // Same rank melds are valid with 3+ cards and max 1 joker
+            return cards.length >= 3;
+        }
+
+        // Check if sequence (all same suit, consecutive ranks)
+        const firstSuit = natural[0].suit;
+        const allSameSuit = natural.every(c => c.suit === firstSuit);
+
+        if (!allSameSuit) return false;
+
+        // Try both Ace-low (A=1) and Ace-high (A=14) for sequences
+        const isValidSequence = (aceValue) => {
+            const rankValues = { 'A': aceValue, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13 };
+            const sorted = natural.map(c => ({ rank: c.rank, value: rankValues[c.rank] }))
+                .sort((a, b) => a.value - b.value);
+
+            // Check if consecutive allowing joker to fill gaps
+            let totalGaps = 0;
+            for (let i = 1; i < sorted.length; i++) {
+                const gap = sorted[i].value - sorted[i - 1].value - 1;
+
+                if (gap < 0) {
+                    return false; // Duplicate rank in sequence
+                }
+
+                totalGaps += gap;
+            }
+
+            // Total gaps must be fillable by the joker(s)
+            return totalGaps <= jokers.length;
+        };
+
+        // Valid if sequence works with Ace as 1 OR Ace as 14
+        return isValidSequence(1) || isValidSequence(14);
+    }
+
+    /**
      * Update action button states
      */
     updateActionButtons() {
@@ -949,8 +1018,9 @@ class GameTableUI {
 
         const canDiscard = this.isMyTurn && this.currentPhase !== 'draw' && this.selectedCards.size === 1;
 
-        // Must be >= 3 AND must leave at least 1 card in hand
-        const canPlayMeld = canMeldPhase && selectedCount >= 3 && leavesAtLeastOneCard;
+        // Must be >= 3, form valid meld, AND leave at least 1 card in hand
+        const cardIds = Array.from(this.selectedCards);
+        const canPlayMeld = canMeldPhase && selectedCount >= 3 && leavesAtLeastOneCard && this.isValidMeld(cardIds);
 
         this.drawBtn.disabled = !canDraw;
         this.takeDiscardBtn.disabled = !canDraw || (this.gameState.discardPile?.length === 0);

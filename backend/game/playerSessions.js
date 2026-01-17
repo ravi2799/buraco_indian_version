@@ -192,7 +192,7 @@ export function removeSession(playerId) {
  */
 export function cleanupStaleSessions() {
     const now = Date.now();
-    const staleTimeout = 10 * 60 * 1000; // 10 minutes
+    const staleTimeout = 5 * 60 * 1000; // 5 minutes (optimized for low memory)
 
     for (const [playerId, session] of sessions) {
         if (now - session.lastSeen > staleTimeout && !session.sseResponse) {
