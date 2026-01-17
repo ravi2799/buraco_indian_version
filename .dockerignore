@@ -1,0 +1,23 @@
+# Ignore development files
+node_modules
+npm-debug.log
+.git
+.gitignore
+*.md
+
+# Environment files
+.env
+.env.*
+
+# Test files
+**/*.test.js
+**/*.spec.js
+
+# IDE
+.vscode
+.idea
+
+# Local config
+start.sh
+render.yaml
+netlify.toml
