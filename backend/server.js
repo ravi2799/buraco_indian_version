@@ -146,11 +146,6 @@ app.post('/api/room/create', (req, res) => {
             return res.json({ success: false, reason: 'Invalid player count' });
         }
 
-        // Limit concurrent rooms for low memory (512MB)
-        if (rooms.size >= 2) {
-            return res.json({ success: false, reason: 'Server busy, please try again later' });
-        }
-
         const room = new Room(playerId, nickname.trim(), avatarId, maxPlayers, roomConfig);
         rooms.set(room.code, room);
         sessionJoinRoom(playerId, room.code, nickname.trim(), avatarId);
@@ -335,14 +330,13 @@ function handleGameAction(playerId, action) {
                 result: room.game.getGameResult()
             });
 
-            // Clear game state after 2 minutes to free memory (players can view results)
+            // Delete room after 30 seconds to free memory and allow new games
             setTimeout(() => {
                 if (rooms.has(roomCode)) {
-                    const r = rooms.get(roomCode);
-                    r.game = null; // Clear heavy game state
-                    console.log(`Cleared game state for room ${roomCode}`);
+                    rooms.delete(roomCode);
+                    console.log(`Deleted room ${roomCode} after game over`);
                 }
-            }, 2 * 60 * 1000);
+            }, 30 * 1000);
         }
     }
 
