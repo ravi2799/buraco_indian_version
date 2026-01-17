@@ -1,15 +1,29 @@
 /**
  * Buraco Multiplayer Server
- * Express + Socket.IO for real-time game communication
+ * Express + SSE for real-time game communication
+ * Uses HTTP POST for actions and Server-Sent Events for updates
  */
 
 import express from 'express';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Room from './game/Room.js';
+import {
+    createSession,
+    getSession,
+    joinRoom as sessionJoinRoom,
+    leaveRoom as sessionLeaveRoom,
+    getPlayerRoom,
+    setSseResponse,
+    removeSseResponse,
+    sendToPlayer,
+    broadcastToRoom,
+    getPlayersInRoom,
+    removeSession,
+    cleanupStaleSessions
+} from './game/playerSessions.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,15 +32,11 @@ const app = express();
 const httpServer = createServer(app);
 
 // CORS configuration
-const io = new Server(httpServer, {
-    cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
-    }
-});
-
 app.use(cors());
 app.use(express.json());
+
+// Room storage (in-memory)
+const rooms = new Map(); // roomCode -> Room instance
 
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -34,19 +44,456 @@ if (process.env.NODE_ENV === 'production') {
     app.use(express.static(frontendPath));
 }
 
-// Room storage (in-memory)
-const rooms = new Map(); // roomCode -> Room instance
-const playerRooms = new Map(); // socketId -> roomCode
-
 /**
- * Health check endpoint (API)
+ * Health check endpoint
  */
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         game: 'Buraco Multiplayer',
-        rooms: rooms.size
+        rooms: rooms.size,
+        transport: 'SSE'
     });
+});
+
+/**
+ * Create a new player session (get a player ID)
+ */
+app.post('/api/session', (req, res) => {
+    const playerId = createSession();
+    console.log(`New session created: ${playerId}`);
+    res.json({ success: true, playerId });
+});
+
+/**
+ * SSE endpoint - Server-Sent Events stream for game updates
+ */
+app.get('/api/events/:playerId', (req, res) => {
+    const { playerId } = req.params;
+    const session = getSession(playerId);
+
+    if (!session) {
+        return res.status(404).json({ success: false, reason: 'Invalid session' });
+    }
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    res.flushHeaders();
+
+    // Store the response for broadcasting
+    setSseResponse(playerId, res);
+
+    // Send initial connected event
+    res.write(`event: connected\ndata: ${JSON.stringify({ playerId })}\n\n`);
+
+    // Keep-alive ping every 15 seconds
+    const keepAliveInterval = setInterval(() => {
+        try {
+            res.write(`: keepalive\n\n`);
+        } catch (err) {
+            clearInterval(keepAliveInterval);
+        }
+    }, 15000);
+
+    // Handle client disconnect
+    req.on('close', () => {
+        clearInterval(keepAliveInterval);
+        removeSseResponse(playerId);
+
+        // Handle player leaving room
+        const roomCode = getPlayerRoom(playerId);
+        if (roomCode) {
+            const room = rooms.get(roomCode);
+            if (room) {
+                room.removePlayer(playerId);
+                sessionLeaveRoom(playerId);
+
+                if (room.players.size === 0) {
+                    rooms.delete(roomCode);
+                    console.log(`Room ${roomCode} removed (empty)`);
+                } else {
+                    // Notify remaining players
+                    broadcastToRoom(roomCode, 'playerLeft', {
+                        roomInfo: room.getPublicInfo()
+                    });
+                }
+            }
+        }
+
+        console.log(`SSE connection closed for player: ${playerId}`);
+    });
+});
+
+/**
+ * Create a new room
+ */
+app.post('/api/room/create', (req, res) => {
+    try {
+        const { playerId, nickname, maxPlayers, avatarId, roomConfig } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        if (!nickname || nickname.trim().length === 0) {
+            return res.json({ success: false, reason: 'Nickname required' });
+        }
+
+        if (![2, 4, 6].includes(maxPlayers)) {
+            return res.json({ success: false, reason: 'Invalid player count' });
+        }
+
+        const room = new Room(playerId, nickname.trim(), avatarId, maxPlayers, roomConfig);
+        rooms.set(room.code, room);
+        sessionJoinRoom(playerId, room.code, nickname.trim(), avatarId);
+
+        console.log(`Room created: ${room.code} by ${nickname}`);
+
+        res.json({
+            success: true,
+            roomCode: room.code,
+            roomInfo: room.getPublicInfo()
+        });
+    } catch (err) {
+        console.error('Error creating room:', err);
+        res.json({ success: false, reason: 'Failed to create room' });
+    }
+});
+
+/**
+ * Join an existing room
+ */
+app.post('/api/room/join', (req, res) => {
+    try {
+        const { playerId, nickname, roomCode, avatarId } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        if (!nickname || nickname.trim().length === 0) {
+            return res.json({ success: false, reason: 'Nickname required' });
+        }
+
+        const code = roomCode.toUpperCase().trim();
+        const room = rooms.get(code);
+
+        if (!room) {
+            return res.json({ success: false, reason: 'Room not found' });
+        }
+
+        const result = room.addPlayer(playerId, nickname.trim(), avatarId);
+
+        if (!result.success) {
+            return res.json(result);
+        }
+
+        sessionJoinRoom(playerId, code, nickname.trim(), avatarId);
+
+        // Notify all players in room via SSE
+        broadcastToRoom(code, 'playerJoined', {
+            roomInfo: room.getPublicInfo()
+        });
+
+        console.log(`${nickname} joined room ${code}`);
+
+        res.json({
+            success: true,
+            roomInfo: room.getPublicInfo()
+        });
+    } catch (err) {
+        console.error('Error joining room:', err);
+        res.json({ success: false, reason: 'Failed to join room' });
+    }
+});
+
+/**
+ * Swap a player's team (host only, 4/6 player games)
+ */
+app.post('/api/room/swap-team', (req, res) => {
+    try {
+        const { playerId, seat } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        const roomCode = getPlayerRoom(playerId);
+        if (!roomCode) {
+            return res.json({ success: false, reason: 'Not in a room' });
+        }
+
+        const room = rooms.get(roomCode);
+        if (!room) {
+            return res.json({ success: false, reason: 'Room not found' });
+        }
+
+        if (room.hostId !== playerId) {
+            return res.json({ success: false, reason: 'Only host can swap teams' });
+        }
+
+        const result = room.swapPlayerTeam(seat);
+
+        if (!result.success) {
+            return res.json(result);
+        }
+
+        // Notify all players in the room
+        broadcastToRoom(roomCode, 'playerJoined', {
+            roomInfo: room.getPublicInfo()
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error swapping team:', err);
+        res.json({ success: false, reason: 'Failed to swap team' });
+    }
+});
+
+/**
+ * Start the game (host only)
+ */
+app.post('/api/game/start', (req, res) => {
+    try {
+        const { playerId } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        const roomCode = getPlayerRoom(playerId);
+        if (!roomCode) {
+            return res.json({ success: false, reason: 'Not in a room' });
+        }
+
+        const room = rooms.get(roomCode);
+        if (!room) {
+            return res.json({ success: false, reason: 'Room not found' });
+        }
+
+        if (room.hostId !== playerId) {
+            return res.json({ success: false, reason: 'Only host can start the game' });
+        }
+
+        const result = room.startGame();
+
+        if (!result.success) {
+            return res.json(result);
+        }
+
+        console.log(`Game started in room ${roomCode}`);
+
+        // Send personalized game state to each player via SSE
+        for (const [pid] of room.players) {
+            sendToPlayer(pid, 'gameStarted', {
+                gameState: room.getPlayerView(pid)
+            });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error starting game:', err);
+        res.json({ success: false, reason: 'Failed to start game' });
+    }
+});
+
+/**
+ * Helper function to handle game actions
+ */
+function handleGameAction(playerId, action) {
+    const roomCode = getPlayerRoom(playerId);
+    if (!roomCode) {
+        return { success: false, reason: 'Not in a room' };
+    }
+
+    const room = rooms.get(roomCode);
+    if (!room || !room.game) {
+        return { success: false, reason: 'Game not found' };
+    }
+
+    const result = action(room);
+
+    if (result.success) {
+        // Broadcast updated game state to all players via SSE
+        for (const [pid] of room.players) {
+            sendToPlayer(pid, 'gameStateUpdate', {
+                gameState: room.getPlayerView(pid)
+            });
+        }
+
+        // If game is over, send result
+        if (result.gameOver || room.game.isGameOver) {
+            broadcastToRoom(roomCode, 'gameOver', {
+                result: room.game.getGameResult()
+            });
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Draw from draw pile
+ */
+app.post('/api/game/draw', (req, res) => {
+    try {
+        const { playerId } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        const roomCode = getPlayerRoom(playerId);
+        const room = rooms.get(roomCode);
+
+        const result = handleGameAction(playerId, (room) => {
+            const drawResult = room.game.drawFromPile(playerId);
+            if (drawResult.success) {
+                // Get player info for animation
+                const player = room.players.get(playerId);
+                // Emit animation event to all players
+                broadcastToRoom(roomCode, 'playerAction', {
+                    type: 'drawFromPile',
+                    playerNickname: player?.nickname || 'Player',
+                    playerSeat: player?.seat,
+                    cardCount: 1
+                });
+            }
+            return drawResult;
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error('Error in draw action:', err);
+        res.json({ success: false, reason: 'Action failed' });
+    }
+});
+
+/**
+ * Take discard pile
+ */
+app.post('/api/game/take-discard', (req, res) => {
+    try {
+        const { playerId } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        const roomCode = getPlayerRoom(playerId);
+        const room = rooms.get(roomCode);
+
+        const result = handleGameAction(playerId, (room) => {
+            const discardCount = room.game.discardPile?.length || 0;
+            const takeResult = room.game.takeDiscardPile(playerId);
+            if (takeResult.success) {
+                const player = room.players.get(playerId);
+                broadcastToRoom(roomCode, 'playerAction', {
+                    type: 'takeDiscardPile',
+                    playerNickname: player?.nickname || 'Player',
+                    playerSeat: player?.seat,
+                    cardCount: takeResult.cards?.length || discardCount
+                });
+            }
+            return takeResult;
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error('Error in take-discard action:', err);
+        res.json({ success: false, reason: 'Action failed' });
+    }
+});
+
+/**
+ * Play a new meld
+ */
+app.post('/api/game/meld', (req, res) => {
+    try {
+        const { playerId, cardIds } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        const result = handleGameAction(playerId, (room) => {
+            return room.game.playMeld(playerId, cardIds);
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error('Error in meld action:', err);
+        res.json({ success: false, reason: 'Action failed' });
+    }
+});
+
+/**
+ * Extend an existing meld
+ */
+app.post('/api/game/extend-meld', (req, res) => {
+    try {
+        const { playerId, meldId, cardIds } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        const result = handleGameAction(playerId, (room) => {
+            return room.game.extendMeld(playerId, meldId, cardIds);
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error('Error in extend-meld action:', err);
+        res.json({ success: false, reason: 'Action failed' });
+    }
+});
+
+/**
+ * Discard a card
+ */
+app.post('/api/game/discard', (req, res) => {
+    try {
+        const { playerId, cardId } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        const result = handleGameAction(playerId, (room) => {
+            return room.game.discard(playerId, cardId);
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error('Error in discard action:', err);
+        res.json({ success: false, reason: 'Action failed' });
+    }
+});
+
+/**
+ * Replace a wild card in a meld with a natural card
+ */
+app.post('/api/game/replace-wild', (req, res) => {
+    try {
+        const { playerId, meldId, wildCardId, naturalCardId } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        const result = handleGameAction(playerId, (room) => {
+            return room.game.replaceWildInMeld(playerId, meldId, wildCardId, naturalCardId);
+        });
+
+        res.json(result);
+    } catch (err) {
+        console.error('Error in replace-wild action:', err);
+        res.json({ success: false, reason: 'Action failed' });
+    }
 });
 
 // Serve frontend index.html for all non-API routes in production
@@ -58,321 +505,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 /**
- * Socket.IO connection handling
- */
-io.on('connection', (socket) => {
-    console.log(`Player connected: ${socket.id}`);
-
-    /**
-     * Keep-alive ping handler - prevents Render from killing the connection
-     */
-    socket.on('ping', () => {
-        socket.emit('pong');
-    });
-
-    /**
-     * Create a new room
-     */
-    socket.on('createRoom', ({ nickname, maxPlayers, avatarId, roomConfig }, callback) => {
-        try {
-            if (!nickname || nickname.trim().length === 0) {
-                return callback({ success: false, reason: 'Nickname required' });
-            }
-
-            if (![2, 4, 6].includes(maxPlayers)) {
-                return callback({ success: false, reason: 'Invalid player count' });
-            }
-
-            const room = new Room(socket.id, nickname.trim(), avatarId, maxPlayers, roomConfig);
-            rooms.set(room.code, room);
-            playerRooms.set(socket.id, room.code);
-
-            socket.join(room.code);
-
-            console.log(`Room created: ${room.code} by ${nickname}`);
-
-            callback({
-                success: true,
-                roomCode: room.code,
-                roomInfo: room.getPublicInfo()
-            });
-        } catch (err) {
-            console.error('Error creating room:', err);
-            callback({ success: false, reason: 'Failed to create room' });
-        }
-    });
-
-    /**
-     * Join an existing room
-     */
-    socket.on('joinRoom', ({ nickname, roomCode, avatarId }, callback) => {
-        try {
-            if (!nickname || nickname.trim().length === 0) {
-                return callback({ success: false, reason: 'Nickname required' });
-            }
-
-            const code = roomCode.toUpperCase().trim();
-            const room = rooms.get(code);
-
-            if (!room) {
-                return callback({ success: false, reason: 'Room not found' });
-            }
-
-            const result = room.addPlayer(socket.id, nickname.trim(), avatarId);
-
-            if (!result.success) {
-                return callback(result);
-            }
-
-            playerRooms.set(socket.id, code);
-            socket.join(code);
-
-            // Notify all players in room
-            io.to(code).emit('playerJoined', {
-                roomInfo: room.getPublicInfo()
-            });
-
-            console.log(`${nickname} joined room ${code}`);
-
-            callback({
-                success: true,
-                roomInfo: room.getPublicInfo()
-            });
-        } catch (err) {
-            console.error('Error joining room:', err);
-            callback({ success: false, reason: 'Failed to join room' });
-        }
-    });
-
-    /**
-     * Swap a player's team (host only, 4/6 player games)
-     */
-    socket.on('swapTeam', ({ seat }, callback) => {
-        try {
-            const roomCode = playerRooms.get(socket.id);
-            if (!roomCode) {
-                return callback({ success: false, reason: 'Not in a room' });
-            }
-
-            const room = rooms.get(roomCode);
-            if (!room) {
-                return callback({ success: false, reason: 'Room not found' });
-            }
-
-            if (room.hostId !== socket.id) {
-                return callback({ success: false, reason: 'Only host can swap teams' });
-            }
-
-            const result = room.swapPlayerTeam(seat);
-
-            if (!result.success) {
-                return callback(result);
-            }
-
-            // Notify all players in the room
-            io.to(roomCode).emit('playerJoined', {
-                roomInfo: room.getPublicInfo()
-            });
-
-            callback({ success: true });
-        } catch (err) {
-            console.error('Error swapping team:', err);
-            callback({ success: false, reason: 'Failed to swap team' });
-        }
-    });
-
-    /**
-     * Start the game (host only)
-     */
-    socket.on('startGame', (callback) => {
-        try {
-            const roomCode = playerRooms.get(socket.id);
-            if (!roomCode) {
-                return callback({ success: false, reason: 'Not in a room' });
-            }
-
-            const room = rooms.get(roomCode);
-            if (!room) {
-                return callback({ success: false, reason: 'Room not found' });
-            }
-
-            if (room.hostId !== socket.id) {
-                return callback({ success: false, reason: 'Only host can start the game' });
-            }
-
-            const result = room.startGame();
-
-            if (!result.success) {
-                return callback(result);
-            }
-
-            console.log(`Game started in room ${roomCode}`);
-
-            // Send personalized game state to each player
-            for (const [playerId] of room.players) {
-                io.to(playerId).emit('gameStarted', {
-                    gameState: room.getPlayerView(playerId)
-                });
-            }
-
-            callback({ success: true });
-        } catch (err) {
-            console.error('Error starting game:', err);
-            callback({ success: false, reason: 'Failed to start game' });
-        }
-    });
-
-    /**
-     * Draw from draw pile
-     */
-    socket.on('drawFromPile', (callback) => {
-        handleGameAction(socket, callback, (room) => {
-            const result = room.game.drawFromPile(socket.id);
-            if (result.success) {
-                // Get player info for animation
-                const player = room.players.get(socket.id);
-                // Emit animation event to all players
-                io.to(room.code).emit('playerAction', {
-                    type: 'drawFromPile',
-                    playerNickname: player?.nickname || 'Player',
-                    playerSeat: player?.seat,
-                    cardCount: 1
-                });
-            }
-            return result;
-        });
-    });
-
-    /**
-     * Take discard pile
-     */
-    socket.on('takeDiscardPile', (callback) => {
-        handleGameAction(socket, callback, (room) => {
-            const discardCount = room.game.discardPile?.length || 0;
-            const result = room.game.takeDiscardPile(socket.id);
-            if (result.success) {
-                const player = room.players.get(socket.id);
-                io.to(room.code).emit('playerAction', {
-                    type: 'takeDiscardPile',
-                    playerNickname: player?.nickname || 'Player',
-                    playerSeat: player?.seat,
-                    cardCount: result.cards?.length || discardCount
-                });
-            }
-            return result;
-        });
-    });
-
-
-    /**
-     * Play a new meld
-     */
-    socket.on('playMeld', ({ cardIds }, callback) => {
-        handleGameAction(socket, callback, (room) => {
-            return room.game.playMeld(socket.id, cardIds);
-        });
-    });
-
-    /**
-     * Extend an existing meld
-     */
-    socket.on('extendMeld', ({ meldId, cardIds }, callback) => {
-        handleGameAction(socket, callback, (room) => {
-            return room.game.extendMeld(socket.id, meldId, cardIds);
-        });
-    });
-
-    /**
-     * Discard a card
-     */
-    socket.on('discard', ({ cardId }, callback) => {
-        handleGameAction(socket, callback, (room) => {
-            return room.game.discard(socket.id, cardId);
-        });
-    });
-
-    /**
-     * Replace a wild card in a meld with a natural card
-     */
-    socket.on('replaceWild', ({ meldId, wildCardId, naturalCardId }, callback) => {
-        handleGameAction(socket, callback, (room) => {
-            return room.game.replaceWildInMeld(socket.id, meldId, wildCardId, naturalCardId);
-        });
-    });
-
-    /**
-     * Handle player disconnect
-     */
-    socket.on('disconnect', () => {
-        const roomCode = playerRooms.get(socket.id);
-
-        if (roomCode) {
-            const room = rooms.get(roomCode);
-
-            if (room) {
-                room.removePlayer(socket.id);
-
-                if (room.players.size === 0) {
-                    // Remove empty room
-                    rooms.delete(roomCode);
-                    console.log(`Room ${roomCode} removed (empty)`);
-                } else {
-                    // Notify remaining players
-                    io.to(roomCode).emit('playerLeft', {
-                        roomInfo: room.getPublicInfo()
-                    });
-                }
-            }
-
-            playerRooms.delete(socket.id);
-        }
-
-        console.log(`Player disconnected: ${socket.id}`);
-    });
-});
-
-/**
- * Helper function to handle game actions
- */
-function handleGameAction(socket, callback, action) {
-    try {
-        const roomCode = playerRooms.get(socket.id);
-        if (!roomCode) {
-            return callback({ success: false, reason: 'Not in a room' });
-        }
-
-        const room = rooms.get(roomCode);
-        if (!room || !room.game) {
-            return callback({ success: false, reason: 'Game not found' });
-        }
-
-        const result = action(room);
-
-        if (result.success) {
-            // Broadcast updated game state to all players
-            for (const [playerId] of room.players) {
-                io.to(playerId).emit('gameStateUpdate', {
-                    gameState: room.getPlayerView(playerId)
-                });
-            }
-
-            // If game is over, send result
-            if (result.gameOver || room.game.isGameOver) {
-                io.to(roomCode).emit('gameOver', {
-                    result: room.game.getGameResult()
-                });
-            }
-        }
-
-        callback(result);
-    } catch (err) {
-        console.error('Error in game action:', err);
-        callback({ success: false, reason: 'Action failed' });
-    }
-}
-
-/**
- * Cleanup stale rooms periodically
+ * Cleanup stale rooms and sessions periodically
  */
 setInterval(() => {
     const now = Date.now();
@@ -384,6 +517,9 @@ setInterval(() => {
             console.log(`Cleaned up stale room: ${code}`);
         }
     }
+
+    // Cleanup stale player sessions
+    cleanupStaleSessions();
 }, 30 * 60 * 1000); // Check every 30 minutes
 
 /**
@@ -391,5 +527,5 @@ setInterval(() => {
  */
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
-    console.log(`Buraco server running on port ${PORT}`);
+    console.log(`Buraco server running on port ${PORT} (SSE mode)`);
 });
