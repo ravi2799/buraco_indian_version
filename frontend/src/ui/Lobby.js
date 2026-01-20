@@ -14,7 +14,7 @@ class LobbyUI {
         // Room configuration
         this.roomConfig = {
             turnTimer: 60,  // seconds (0 = disabled)
-            deckCount: 2,
+            deckCount: 3,
             jokersPerDeck: 2
         };
 

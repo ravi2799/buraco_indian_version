@@ -588,9 +588,14 @@
 
 /* Two-row layout when many melds */
 .melds-grid.two-rows {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: 1fr 1fr;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-flow: row wrap;
+    /* overflow: scroll; */
+    /* overflow-x: hidden; */
+    /* grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: 1fr 1fr; */
     gap: 6px 4px;
     align-items: start;
     align-content: start;

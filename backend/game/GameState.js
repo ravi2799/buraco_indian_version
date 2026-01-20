@@ -23,7 +23,7 @@ export default class GameState {
         // Room configuration
         this.config = {
             turnTimer: config.turnTimer ?? 60,
-            deckCount: config.deckCount ?? 2,
+            deckCount: config.deckCount ?? 3,
             jokersPerDeck: config.jokersPerDeck ?? 2
         };
 

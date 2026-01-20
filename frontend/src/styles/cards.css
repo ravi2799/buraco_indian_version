@@ -309,8 +309,8 @@
 
 /* Meld cards - Vertical overlap showing rank of each card */
 .meld .card {
-    width: 60px;
-    height: 84px;
+    width: 70px;
+    height: 94px;
     cursor: default;
     margin-bottom: -54px;
     /* Show ~30px of each card (rank + suit) */
@@ -342,8 +342,8 @@
 
 /* Medium melds (5-8 melds) */
 .melds-grid.medium .meld .card {
-    width: 50px;
-    height: 70px;
+    width: 70px;
+    height: 90px;
     margin-bottom: -44px;
     /* Show ~26px of each card (rank + suit) */
 }
@@ -366,8 +366,8 @@
 
 /* Compact melds (9-12 melds) */
 .melds-grid.compact .meld .card {
-    width: 44px;
-    height: 62px;
+    width: 54px;
+    height: 72px;
     margin-bottom: -40px;
     /* Show ~22px of each card (rank + suit) */
 }
@@ -414,8 +414,8 @@
 
 /* Two-row layout */
 .melds-grid.two-rows .meld .card {
-    width: 44px;
-    height: 62px;
+    width: 64px;
+    height: 82px;
     margin-bottom: -40px;
     /* Show ~22px of each card (rank + suit) */
 }

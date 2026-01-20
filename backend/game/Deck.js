@@ -75,7 +75,7 @@ export function dealCards(playerCount, deckCount = 3, jokersPerDeck = 2) {
   const deck = shuffle(createDeck(deckCount, jokersPerDeck));
 
   const hands = [];
-  const cardsPerHand = 11;
+  const cardsPerHand = 14;
 
   // Deal 11 cards to each player
   for (let i = 0; i < playerCount; i++) {
