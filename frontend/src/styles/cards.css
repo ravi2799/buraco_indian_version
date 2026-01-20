@@ -420,6 +420,14 @@
     /* Show ~22px of each card (rank + suit) */
 }
 
+.melds-grid.two-rows.is-grid .meld .card {
+    width: 54px;
+    height: 72px;
+    margin-bottom: -40px;
+    /* Show ~22px of each card (rank + suit) */
+}
+
+
 .melds-grid.two-rows .meld .card:last-child {
     margin-bottom: 0;
 }

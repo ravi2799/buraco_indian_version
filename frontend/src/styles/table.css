@@ -586,8 +586,30 @@
     min-height: 0;
 }
 
+.melds-grid.is-flex {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    /* overflow-y: hidden; */
+    /* -webkit-overflow-scrolling: touch; */
+    padding-bottom: 6px;
+    /* gives room for scrollbar */
+}
+
+/* Grid view */
+.melds-grid.is-grid {
+    display: grid;
+    overflow: visible;
+    /* grid-template-columns: repeat(7, 1fr); */
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: 1fr 1fr;
+    /* tweak */
+    /* grid-auto-rows: auto; */
+}
+
 /* Two-row layout when many melds */
-.melds-grid.two-rows {
+.melds-grid.two-rows:not(.is-grid) {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -599,6 +621,32 @@
     gap: 6px 4px;
     align-items: start;
     align-content: start;
+}
+
+.zone-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Toggle UI */
+.view-toggle {
+    display: inline-flex;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.toggle-btn {
+    background: transparent;
+    border: 0;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.toggle-btn.is-active {
+    background: rgba(255, 255, 255, 0.15);
 }
 
 /* Scrollbar Styling for Melds Grid - Vertical */

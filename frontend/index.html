@@ -182,16 +182,26 @@
               <div class="zone-header">
                 <h4>Team A</h4>
                 <span class="zone-points" id="team-a-zone-points">0 Pts.</span>
+
+                <div class="view-toggle" role="group" aria-label="Meld view toggle">
+                  <button type="button" class="toggle-btn is-active" data-view="flex">Flex</button>
+                  <button type="button" class="toggle-btn" data-view="grid">Grid</button>
+                </div>
               </div>
-              <div class="melds-grid"></div>
+              <div class="melds-grid is-flex"></div>
             </div>
 
             <div id="team-b-melds" class="team-melds team-b-zone">
               <div class="zone-header">
                 <h4>Team B</h4>
                 <span class="zone-points" id="team-b-zone-points">0 Pts.</span>
+
+                <div class="view-toggle" role="group" aria-label="Meld view toggle">
+                  <button type="button" class="toggle-btn is-active" data-view="flex">Flex</button>
+                  <button type="button" class="toggle-btn" data-view="grid">Grid</button>
+                </div>
               </div>
-              <div class="melds-grid"></div>
+              <div class="melds-grid is-flex"></div>
             </div>
           </div>
 
@@ -330,6 +340,27 @@
   </div>
 
   <script type="module" src="/src/main.js"></script>
+  <script>
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".toggle-btn");
+      if (!btn) return;
+
+      const container = btn.closest(".team-melds") || document;
+      const gridEl = container.querySelector(".melds-grid");
+      if (!gridEl) return;
+
+      const view = btn.dataset.view; // "flex" or "grid"
+
+      // swap layout classes
+      gridEl.classList.toggle("is-flex", view === "flex");
+      gridEl.classList.toggle("is-grid", view === "grid");
+
+      // update active button styling
+      btn.parentElement.querySelectorAll(".toggle-btn").forEach(b => {
+        b.classList.toggle("is-active", b === btn);
+      });
+    });
+  </script>
 </body>
 
 </html>
