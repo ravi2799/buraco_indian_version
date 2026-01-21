@@ -87,8 +87,8 @@ export function dealCards(playerCount, deckCount = 3, jokersPerDeck = 2) {
   // For 4 players: 2 pozzetti (one per team)
   // For 6 players: 2 pozzetti (one per team)
   const pozzetti = [
-    deck.splice(0, 11),
-    deck.splice(0, 11)
+    deck.splice(0, 14),
+    deck.splice(0, 14)
   ];
 
   // First card of discard pile
