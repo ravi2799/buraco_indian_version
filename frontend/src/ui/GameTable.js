@@ -1006,7 +1006,7 @@ class GameTableUI {
 
             if (i <= pozzettoCount) {
                 // Show this pozzetto
-                pozzettoEl.style.display = '';
+                pozzettoEl.style.display = 'flex';
 
                 // Update status
                 const isTaken = this.gameState.pozzettiTaken && this.gameState.pozzettiTaken[i - 1];

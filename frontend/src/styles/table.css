@@ -352,7 +352,11 @@
     left: 20px;
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
+    /* Allow wrapping for 3-4 pozzetti */
     gap: var(--spacing-xs);
+    max-width: 200px;
+    /* Limit width to force wrapping */
     z-index: 20;
 }
 
