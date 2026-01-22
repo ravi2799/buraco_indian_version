@@ -993,45 +993,59 @@ class GameTableUI {
      */
     renderPozzetti() {
         if (!this.gameState.pozzettiCounts) return;
-        if (this.gameState.pozzettiTaken) {
-            this.pozzetto1.classList.toggle('taken', this.gameState.pozzettiTaken[0]);
-            this.pozzetto2.classList.toggle('taken', this.gameState.pozzettiTaken[1]);
-        }
 
-        const updatePozzettoVisuals = (pozzettoEl, countEl, count) => {
-            if (!pozzettoEl || !countEl) return;
+        // Get number of pozzetti from config (default 2)
+        const pozzettoCount = this.gameState.config?.pozzettoCount || 2;
 
-            // textual count
-            countEl.textContent = count > 0 ? `${count} cards` : 'Taken';
+        // Update all possible pozzetti
+        for (let i = 1; i <= 4; i++) {
+            const pozzettoEl = document.getElementById(`pozzetto-${i}`);
+            const countEl = document.getElementById(`pozzetto-${i}-count`);
 
-            // visual deck
-            const stackContainer = pozzettoEl.querySelector('.card-stack') ||
-                pozzettoEl.insertBefore(document.createElement('div'), pozzettoEl.firstChild);
-            stackContainer.className = 'card-stack';
-            stackContainer.innerHTML = '';
+            if (!pozzettoEl) continue;
 
-            if (count > 0) {
-                // Create a stack visual (max 3 cards visible depth)
-                const stack = createCardStackElement(count, { maxVisible: 3 });
-                stackContainer.replaceWith(stack);
+            if (i <= pozzettoCount) {
+                // Show this pozzetto
+                pozzettoEl.style.display = '';
+
+                // Update status
+                const isTaken = this.gameState.pozzettiTaken && this.gameState.pozzettiTaken[i - 1];
+                const count = this.gameState.pozzettiCounts[i - 1] || 0;
+
+                pozzettoEl.classList.toggle('taken', isTaken);
+
+                // Update visuals
+                this.updatePozzettoVisuals(pozzettoEl, countEl, count);
             } else {
-                // Render empty placeholder or nothing
-                stackContainer.innerHTML = '';
+                // Hide this pozzetto
+                pozzettoEl.style.display = 'none';
             }
-        };
+        }
+    }
 
-        // Update both pozzetti
-        updatePozzettoVisuals(
-            this.pozzetto1,
-            document.getElementById('pozzetto-1-count'),
-            this.gameState.pozzettiCounts[0]
-        );
+    /**
+     * Update visual display of a pozzetto
+     */
+    updatePozzettoVisuals(pozzettoEl, countEl, count) {
+        if (!pozzettoEl || !countEl) return;
 
-        updatePozzettoVisuals(
-            this.pozzetto2,
-            document.getElementById('pozzetto-2-count'),
-            this.gameState.pozzettiCounts[1]
-        );
+        // textual count
+        countEl.textContent = count > 0 ? `${count} cards` : 'Taken';
+
+        // visual deck
+        const stackContainer = pozzettoEl.querySelector('.card-stack') ||
+            pozzettoEl.insertBefore(document.createElement('div'), pozzettoEl.firstChild);
+        stackContainer.className = 'card-stack';
+        stackContainer.innerHTML = '';
+
+        if (count > 0) {
+            // Create a stack visual (max 3 cards visible depth)
+            const stack = createCardStackElement(count, { maxVisible: 3 });
+            stackContainer.replaceWith(stack);
+        } else {
+            // Render empty placeholder or nothing
+            stackContainer.innerHTML = '';
+        }
     }
 
     /**
@@ -1271,6 +1285,21 @@ class GameTableUI {
         }
 
         const cardIds = Array.from(this.selectedCards);
+
+        // Get the selected cards
+        const selectedCardsObjs = cardIds.map(id =>
+            this.gameState.hand.find(c => c.id === id)
+        ).filter(Boolean);
+
+        // Check if adding these cards would violate the "max 1 joker" rule
+        const existingJokers = meld.cards.filter(c => c.rank === 'JOKER').length;
+        const newJokers = selectedCardsObjs.filter(c => c.rank === 'JOKER').length;
+        const totalJokers = existingJokers + newJokers;
+
+        if (totalJokers > 1) {
+            alert('Cannot add: A meld can have at most 1 Joker!');
+            return;
+        }
 
         try {
             await gameClient.extendMeld(meld.id, cardIds);

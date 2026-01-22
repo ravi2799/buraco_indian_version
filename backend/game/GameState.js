@@ -113,16 +113,11 @@ export default class GameState {
             },
 
             // Pozzetti status (shared - not team-specific)
-            pozzettiTaken: [
-                this.pozzetti[0]?.length === 0,
-                this.pozzetti[1]?.length === 0
-            ],
+            // Dynamically map all pozzetti (could be 2, 3, or 4)
+            pozzettiTaken: this.pozzetti.map(p => p?.length === 0),
 
             // Pozzetti card counts
-            pozzettiCounts: [
-                this.pozzetti[0]?.length || 0,
-                this.pozzetti[1]?.length || 0
-            ],
+            pozzettiCounts: this.pozzetti.map(p => p?.length || 0),
 
             // Turn info
             isMyTurn: socketId === this.getCurrentPlayerId(),
@@ -215,15 +210,8 @@ export default class GameState {
             return { success: false, reason: validation.reason };
         }
 
-        // Check for duplicate set (can't have two sets of same rank)
-        if (validation.type === 'set') {
-            const existingSet = team.melds.find(m =>
-                m.type === 'set' && m.rank === validation.rank
-            );
-            if (existingSet) {
-                return { success: false, reason: 'Team already has a set of this rank' };
-            }
-        }
+        // Note: In Buraco with multiple decks, teams CAN have multiple sets of the same rank
+        // For example, two separate 10-10-10 melds are valid
 
         // Remove cards from hand
         for (const card of cards) {

@@ -32,9 +32,10 @@ export default class Room {
 
         // Room configuration with defaults
         this.config = {
-            turnTimer: roomConfig.turnTimer ?? 60,      // seconds (0 = disabled)
-            deckCount: roomConfig.deckCount ?? 3,       // number of decks
-            jokersPerDeck: roomConfig.jokersPerDeck ?? 2 // jokers per deck
+            turnTimer: roomConfig.turnTimer ?? 60,       // seconds (0 = disabled)
+            deckCount: roomConfig.deckCount ?? 3,        // number of decks
+            jokersPerDeck: roomConfig.jokersPerDeck ?? 2,// jokers per deck
+            pozzettoCount: roomConfig.pozzettoCount ?? 2 // number of pozzetti (2-4)
         };
 
         // Add host
@@ -155,7 +156,12 @@ export default class Room {
         this.status = 'playing';
 
         // Deal cards with room config
-        const dealt = dealCards(this.maxPlayers, this.config.deckCount, this.config.jokersPerDeck);
+        const dealt = dealCards(
+            this.maxPlayers,
+            this.config.deckCount,
+            this.config.jokersPerDeck,
+            this.config.pozzettoCount
+        );
 
         // Create game state
         this.game = new GameState({

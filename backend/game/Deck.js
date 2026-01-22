@@ -69,27 +69,29 @@ export function shuffle(deck) {
  * @param {number} playerCount - Number of players (2, 4, or 6)
  * @param {number} deckCount - Number of decks to use (default 3)
  * @param {number} jokersPerDeck - Jokers per deck (default 2)
+ * @param {number} pozzettoCount - Number of pozzetti (default 2, max 4)
  * @returns {object} - { hands, pozzetti, drawPile, discardPile }
  */
-export function dealCards(playerCount, deckCount = 3, jokersPerDeck = 2) {
+export function dealCards(playerCount, deckCount = 3, jokersPerDeck = 2, pozzettoCount = 2) {
   const deck = shuffle(createDeck(deckCount, jokersPerDeck));
 
   const hands = [];
   const cardsPerHand = 14;
 
-  // Deal 11 cards to each player
+  // Deal 14 cards to each player
   for (let i = 0; i < playerCount; i++) {
     hands.push(deck.splice(0, cardsPerHand));
   }
 
-  // Create pozzetti (11 cards each)
-  // For 2 players: 2 pozzetti
-  // For 4 players: 2 pozzetti (one per team)
-  // For 6 players: 2 pozzetti (one per team)
-  const pozzetti = [
-    deck.splice(0, 14),
-    deck.splice(0, 14)
-  ];
+  // Create configurable number of pozzetti (14 cards each)
+  // Default: 2 pozzetti
+  // Can be configured to 2, 3, or 4 pozzetti
+  const pozzetti = [];
+  const validPozzettoCount = Math.max(2, Math.min(4, pozzettoCount)); // Clamp 2-4
+
+  for (let i = 0; i < validPozzettoCount; i++) {
+    pozzetti.push(deck.splice(0, 14));
+  }
 
   // First card of discard pile
   const discardPile = [deck.splice(0, 1)[0]];

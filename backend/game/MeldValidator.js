@@ -209,7 +209,17 @@ export function validateSequence(cards) {
 
     // Check if there's an Ace that could be at the high end (after K)
     const hasLowAce = positions.some(p => p.idx === 0 && positions.some(p2 => p2.idx === 1 || p2.idx === 2));
-    const hasHighAce = positions.some(p => p.idx === 0) && positions.some(p => p.idx === 12); // K
+    const hasKing = positions.some(p => p.idx === 12); // K
+    const hasQueen = positions.some(p => p.idx === 11); // Q
+    const hasJack = positions.some(p => p.idx === 10); // J
+
+    // Ace is high if:
+    // 1. We have natural K with Ace, OR
+    // 2. We have Q or J with Ace AND a JOKER (JOKER will act as K)
+    const hasHighAce = positions.some(p => p.idx === 0) && (
+        hasKing ||
+        ((hasQueen || hasJack) && wilds.length > 0)
+    );
 
     // Adjust ace position if it's at high end
     if (hasHighAce && !hasLowAce) {

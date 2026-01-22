@@ -15,7 +15,8 @@ class LobbyUI {
         this.roomConfig = {
             turnTimer: 60,  // seconds (0 = disabled)
             deckCount: 3,
-            jokersPerDeck: 2
+            jokersPerDeck: 2,
+            pozzettoCount: 2  // number of pozzetti
         };
 
         // DOM elements
@@ -29,6 +30,7 @@ class LobbyUI {
         this.timerBtns = document.querySelectorAll('.config-btn[data-timer]');
         this.deckBtns = document.querySelectorAll('.config-btn[data-decks]');
         this.jokerBtns = document.querySelectorAll('.config-btn[data-jokers]');
+        this.pozzettiBtns = document.querySelectorAll('.config-btn[data-pozzetti]');
 
         this.onRoomJoined = null; // Callback when room is joined
 
@@ -69,6 +71,15 @@ class LobbyUI {
                 this.jokerBtns.forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 this.roomConfig.jokersPerDeck = parseInt(btn.dataset.jokers);
+            });
+        });
+
+        // Pozzetti config
+        this.pozzettiBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.pozzettiBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                this.roomConfig.pozzettoCount = parseInt(btn.dataset.pozzetti);
             });
         });
 
