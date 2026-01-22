@@ -3,7 +3,7 @@
  * Run with: node --experimental-vm-modules backend/game/Reconnection.test.js
  */
 
-import Room from './Room.js';
+import Room from '../Room.js';
 
 // Test utilities
 let testsPassed = 0;

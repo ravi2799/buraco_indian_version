@@ -2,7 +2,7 @@
  * Test cases for Scoring.js - Same Rank Burraco
  */
 
-import { calculateMeldScore, calculateTeamScore } from './Scoring.js';
+import { calculateMeldScore, calculateTeamScore } from '../Scoring.js';
 
 // Card point values (matching Deck.js)
 const CARD_VALUES = {
@@ -125,7 +125,7 @@ console.log('='.repeat(60));
 
 testCases.forEach((test, index) => {
     const result = calculateMeldScore([test.meld]);
-    
+
     console.log(`\nTest ${index + 1}: ${test.name}`);
     console.log(`  Cards: ${test.meld.cards.map(c => c.rank).join(', ')}`);
     console.log(`  Expected Type: ${test.expectedType}`);
@@ -133,7 +133,7 @@ testCases.forEach((test, index) => {
     console.log(`    - cleanBurracos: ${result.cleanBurracos}`);
     console.log(`    - dirtyBurracos: ${result.dirtyBurracos}`);
     console.log(`    - sameRankBurracos: ${result.sameRankBurracos}`);
-    
+
     const passed = result[test.expectedType] === 1;
     console.log(`  Status: ${passed ? '✅ PASSED' : '❌ FAILED'}`);
 });
@@ -147,15 +147,15 @@ console.log('='.repeat(60));
 
 multipleBurracoTests.forEach((test, index) => {
     const result = calculateMeldScore(test.melds);
-    
+
     console.log(`\nTest ${index + 1}: ${test.name}`);
     test.melds.forEach((meld, i) => {
         console.log(`  Meld ${i + 1}: ${meld.cards.map(c => c.rank).join(', ')}`);
     });
     console.log(`  Expected: sameRank=${test.expected.sameRankBurracos}, clean=${test.expected.cleanBurracos}, dirty=${test.expected.dirtyBurracos}`);
     console.log(`  Result:   sameRank=${result.sameRankBurracos}, clean=${result.cleanBurracos}, dirty=${result.dirtyBurracos}`);
-    
-    const passed = 
+
+    const passed =
         result.sameRankBurracos === test.expected.sameRankBurracos &&
         result.cleanBurracos === test.expected.cleanBurracos &&
         result.dirtyBurracos === test.expected.dirtyBurracos;
