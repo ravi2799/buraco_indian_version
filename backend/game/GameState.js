@@ -416,7 +416,14 @@ export default class GameState {
                 team.pozzettoIndex = i; // Track which pozzetto was taken
                 team.pozzettoCount = (team.pozzettoCount || 0) + 1; // Increment count (+50 per pozzetto)
                 this.pozzetti[i] = []; // Mark as taken
-                return { success: true, tookPozzetto: true, cards: pozzetto.length, pozzettoIndex: i };
+                return {
+                    success: true,
+                    tookPozzetto: true,
+                    cards: pozzetto.length,
+                    pozzettoIndex: i,
+                    playerNickname: player.nickname,
+                    playerSeat: player.seat
+                };
             }
         }
 
@@ -452,6 +459,8 @@ export default class GameState {
         // Add to discard pile
         this.discardPile.push(card);
 
+        let pozzettoInfo = null;
+
         // If hand is empty, check for pozzetto or going out
         if (hand.length === 0) {
             // Check if any pozzetto is available
@@ -470,13 +479,22 @@ export default class GameState {
                 team.pozzettoIndex = availablePozzettoIndex;
                 team.pozzettoCount = (team.pozzettoCount || 0) + 1; // +50 per pozzetto
                 this.pozzetti[availablePozzettoIndex] = []; // Mark as taken
+
+                // Store pozzetto info for broadcasting
+                pozzettoInfo = {
+                    tookPozzetto: true,
+                    cards: pozzetto.length,
+                    pozzettoIndex: availablePozzettoIndex,
+                    playerNickname: player.nickname,
+                    playerSeat: player.seat
+                };
             }
         }
 
         // Next turn
         this.nextTurn();
 
-        return { success: true };
+        return { success: true, pozzettoInfo };
     }
 
     /**

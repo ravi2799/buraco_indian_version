@@ -34,12 +34,14 @@ export function sortSequenceMeld(cards, suit) {
     });
 
     // Check if Ace should be at high end (after K)
+    let aceIsHigh = false;
     if (naturals.length >= 2) {
         const firstCard = naturals[0];
         const lastCard = naturals[naturals.length - 1];
         if (firstCard.rank === 'A' && lastCard.rank === 'K') {
             // Move Ace to the end
             naturals.push(naturals.shift());
+            aceIsHigh = true;
         }
     }
 
@@ -67,9 +69,26 @@ export function sortSequenceMeld(cards, suit) {
         }
     }
 
-    // Add remaining wilds at the end (extensions)
+    // Handle remaining wilds
+    // If sequence ends with high Ace, place wilds at the BEGINNING (extending downward)
+    // Otherwise, place at the end
+    const wildsToPlace = [];
     while (wildIdx < wilds.length) {
-        result.push(wilds[wildIdx++]);
+        wildsToPlace.push(wilds[wildIdx++]);
+    }
+
+    if (wildsToPlace.length > 0) {
+        // Check if last card is high Ace
+        const lastCard = naturals[naturals.length - 1];
+        const isEndingWithHighAce = lastCard && lastCard.rank === 'A' && aceIsHigh;
+
+        if (isEndingWithHighAce) {
+            // Place wilds at beginning (extend downward from lowest card)
+            return [...wildsToPlace, ...result];
+        } else {
+            // Place wilds at end (extend upward)
+            return [...result, ...wildsToPlace];
+        }
     }
 
     return result;
@@ -239,6 +258,7 @@ export function validateMeld(cards) {
 
 /**
  * Check if cards can be added to an existing meld
+ * For sequences with wilds, this will attempt to reposition the wild if needed
  */
 export function canExtendMeld(existingMeld, newCards, meldInfo) {
     const combined = [...existingMeld, ...newCards];
@@ -246,8 +266,83 @@ export function canExtendMeld(existingMeld, newCards, meldInfo) {
     if (meldInfo.type === 'set') {
         return validateSet(combined);
     } else {
-        return validateSequence(combined);
+        // For sequences, validate the combined meld
+        // The validation will work because sortSequenceMeld intelligently places wilds
+        const result = validateSequence(combined);
+
+        // If validation failed but we have wilds, it might be because a wild needs repositioning
+        // The sortSequenceMeld function will handle this automatically when the meld is saved
+        if (!result.valid && combined.some(c => c.rank === 'JOKER')) {
+            // Try to see if the natural cards form a valid sequence
+            // This helps when adding a card that displaces a wild
+            const naturals = combined.filter(c => c.rank !== 'JOKER');
+            const wilds = combined.filter(c => c.rank === 'JOKER');
+
+            if (naturals.length >= 3) {
+                // Check if naturals can form a sequence with the wild filling gaps
+                const naturalResult = validateSequence(naturals);
+
+                // If naturals are valid by themselves, or can be valid with wild repositioning
+                if (naturalResult.valid || canFormSequenceWithWild(naturals, wilds, meldInfo.suit)) {
+                    // Return a valid result - the sortSequenceMeld will fix positioning
+                    return {
+                        valid: true,
+                        type: 'sequence',
+                        suit: meldInfo.suit,
+                        isClean: wilds.length === 0,
+                        isBurraco: combined.length >= 7
+                    };
+                }
+            }
+        }
+
+        return result;
     }
+}
+
+/**
+ * Helper function to check if naturals + wilds can form a valid sequence
+ * This allows for wild repositioning
+ */
+function canFormSequenceWithWild(naturals, wilds, suit) {
+    if (naturals.length === 0) return false;
+    if (wilds.length > 1) return false; // Max 1 wild
+
+    // All naturals must be same suit
+    if (!naturals.every(c => c.suit === suit)) return false;
+
+    // Get positions of all natural cards
+    const positions = naturals.map(card => {
+        let idx = getRankIndex(card.rank);
+        return { idx, rank: card.rank };
+    }).sort((a, b) => a.idx - b.idx);
+
+    // Check for Ace positioning (can be high or low)
+    const hasAce = positions.some(p => p.rank === 'A');
+    const hasKing = positions.some(p => p.rank === 'K');
+    const hasTwo = positions.some(p => p.rank === '2');
+    const hasThree = positions.some(p => p.rank === '3');
+
+    // If we have K and A, Ace should be high (idx 13)
+    if (hasAce && hasKing && !hasTwo && !hasThree) {
+        const acePos = positions.find(p => p.rank === 'A');
+        if (acePos) acePos.idx = 13;
+        positions.sort((a, b) => a.idx - b.idx);
+    }
+
+    // Count total gaps
+    let totalGaps = 0;
+    for (let i = 1; i < positions.length; i++) {
+        const gap = positions[i].idx - positions[i - 1].idx - 1;
+        if (gap > 0) {
+            totalGaps += gap;
+        } else if (gap < 0) {
+            return false; // Duplicate ranks
+        }
+    }
+
+    // We can fill gaps with wilds
+    return totalGaps <= wilds.length;
 }
 
 /**

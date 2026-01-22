@@ -116,6 +116,7 @@ class GameTableUI {
         let icon = '🃏';
         let desc = '';
         let sourceElement = null;
+        let isSpecial = false;
 
         switch (type) {
             case 'drawFromPile':
@@ -132,6 +133,7 @@ class GameTableUI {
                 icon = '🎁';
                 desc = `took the pozzetto (${cardCount} cards)`;
                 sourceElement = this.pozzetto1?.classList.contains('taken') ? this.pozzetto2 : this.pozzetto1;
+                isSpecial = true;
                 break;
             default:
                 return;
@@ -146,8 +148,18 @@ class GameTableUI {
                 this.discardPile.classList.add('taking');
                 setTimeout(() => this.discardPile.classList.remove('taking'), 400);
             } else if (type === 'takePozzetto') {
-                sourceElement?.classList.add('taking');
-                setTimeout(() => sourceElement?.classList.remove('taking'), 600);
+                // Enhanced pozzetto animation
+                sourceElement?.classList.add('taking', 'super-glow');
+
+                // Add sparkle effect
+                this.addPozzettoSparkles(sourceElement);
+
+                // Create particle burst
+                this.createPozzettoBurst(sourceElement);
+
+                setTimeout(() => {
+                    sourceElement?.classList.remove('taking', 'super-glow');
+                }, 1000);
             }
         }
 
@@ -160,7 +172,7 @@ class GameTableUI {
 
         // Show action toast (skip for self on simple draw)
         if (!isMe || type !== 'drawFromPile') {
-            this.showActionToast(icon, playerNickname, desc, isMe);
+            this.showActionToast(icon, playerNickname, desc, isMe, isSpecial);
         }
     }
 
@@ -199,15 +211,16 @@ class GameTableUI {
     /**
      * Show action toast notification
      */
-    showActionToast(icon, playerName, desc, isMe) {
+    showActionToast(icon, playerName, desc, isMe, isSpecial = false) {
         // Remove existing toast
         const existing = document.querySelector('.action-toast-container');
         if (existing) existing.remove();
 
+        const specialClass = isSpecial ? 'pozzetto-special' : '';
         const container = document.createElement('div');
         container.className = 'action-toast-container';
         container.innerHTML = `
-            <div class="action-toast">
+            <div class="action-toast ${specialClass}">
                 <span class="toast-icon">${icon}</span>
                 <div class="toast-text">
                     <span class="player-name">${isMe ? 'You' : playerName}</span>
@@ -219,6 +232,54 @@ class GameTableUI {
 
         // Remove after animation (2s total)
         setTimeout(() => container.remove(), 2000);
+    }
+
+    /**
+     * Add sparkle effect to pozzetto
+     */
+    addPozzettoSparkles(pozzettoElement) {
+        if (!pozzettoElement) return;
+
+        const sparkle = document.createElement('div');
+        sparkle.className = 'pozzetto-sparkle';
+        pozzettoElement.appendChild(sparkle);
+
+        setTimeout(() => sparkle.remove(), 1000);
+    }
+
+    /**
+     * Create particle burst effect for pozzetto taking
+     */
+    createPozzettoBurst(pozzettoElement) {
+        if (!pozzettoElement) return;
+
+        const rect = pozzettoElement.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const container = document.createElement('div');
+        container.className = 'pozzetto-celebration';
+        document.body.appendChild(container);
+
+        // Create 12 particles radiating outward
+        for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2;
+            const distance = 100 + Math.random() * 50;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+
+            const particle = document.createElement('div');
+            particle.className = 'pozzetto-particle';
+            particle.style.left = `${centerX}px`;
+            particle.style.top = `${centerY}px`;
+            particle.style.setProperty('--tx', `${tx}px`);
+            particle.style.setProperty('--ty', `${ty}px`);
+            particle.style.animationDelay = `${i * 0.05}s`;
+
+            container.appendChild(particle);
+        }
+
+        setTimeout(() => container.remove(), 1500);
     }
 
 
@@ -848,6 +909,9 @@ class GameTableUI {
         if (leftHeader) leftHeader.textContent = `Team ${leftTeam} (You) — ${leftNames}`;
         if (rightHeader) rightHeader.textContent = `Team ${rightTeam} - ${rightNames}`;
 
+        // Check for new buracos before rendering
+        this.checkForNewBuracos(this.gameState.teamsMelds);
+
         // Render melds: left container = my team, right container = opponent team
         renderTeamMelds(this.teamAMelds, this.gameState.teamsMelds[leftTeam] || [], {
             onMeldClick: (meld) => this.handleExtendMeld(meld),
@@ -857,6 +921,68 @@ class GameTableUI {
             onMeldClick: (meld) => this.handleExtendMeld(meld),
             isClickable: false // Opponent team never clickable
         });
+
+        // Store current melds for next comparison
+        this.lastMelds = JSON.parse(JSON.stringify(this.gameState.teamsMelds));
+    }
+
+    /**
+     * Check for newly formed buracos and celebrate
+     */
+    checkForNewBuracos(currentMelds) {
+        if (!this.lastMelds) return;
+
+        for (const [teamId, melds] of Object.entries(currentMelds)) {
+            const lastTeamMelds = this.lastMelds[teamId] || [];
+
+            for (const meld of melds) {
+                // Check if this is a buraco
+                if (meld.isBurraco) {
+                    // Find the same meld in last state (by ID)
+                    const lastMeld = lastTeamMelds.find(m => m.id === meld.id);
+
+                    // If it wasn't a buraco before, celebrate!
+                    if (!lastMeld || !lastMeld.isBurraco) {
+                        this.celebrateBuraco(meld, teamId);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Show buraco celebration
+     */
+    celebrateBuraco(meld, teamId) {
+        const message = meld.isClean ? '🎊 CLEAN BURACO! 🎊' : '🎉 BURACO! 🎉';
+        const specialClass = 'buraco-special';
+
+        // Show celebration message
+        const existing = document.querySelector('.action-toast-container');
+        if (existing) existing.remove();
+
+        const container = document.createElement('div');
+        container.className = 'action-toast-container';
+        container.innerHTML = `
+            <div class="action-toast ${specialClass}">
+                <span class="toast-icon">🏆</span>
+                <div class="toast-text">
+                    <span class="player-name">Team ${teamId}</span>
+                    <span class="action-desc">${message}</span>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(container);
+
+        setTimeout(() => container.remove(), 2500);
+
+        // Add celebration emoji animation
+        const celebration = document.createElement('div');
+        celebration.className = 'buraco-celebration';
+        celebration.textContent = meld.isClean ? '✨🎊✨' : '🎉';
+        document.body.appendChild(celebration);
+
+        setTimeout(() => celebration.remove(), 2000);
     }
 
     /**

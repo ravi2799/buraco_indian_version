@@ -427,8 +427,24 @@ app.post('/api/game/meld', (req, res) => {
             return res.status(401).json({ success: false, reason: 'Invalid session' });
         }
 
+        const roomCode = getPlayerRoom(playerId);
+        const room = rooms.get(roomCode);
+
         const result = handleGameAction(playerId, (room) => {
-            return room.game.playMeld(playerId, cardIds);
+            const meldResult = room.game.playMeld(playerId, cardIds);
+
+            // Check if pozzetto was taken
+            if (meldResult.success && meldResult.tookPozzetto) {
+                const player = room.players.get(playerId);
+                broadcastToRoom(roomCode, 'playerAction', {
+                    type: 'takePozzetto',
+                    playerNickname: player?.nickname || 'Player',
+                    playerSeat: player?.seat,
+                    cardCount: meldResult.cards
+                });
+            }
+
+            return meldResult;
         });
 
         res.json(result);
@@ -449,8 +465,24 @@ app.post('/api/game/extend-meld', (req, res) => {
             return res.status(401).json({ success: false, reason: 'Invalid session' });
         }
 
+        const roomCode = getPlayerRoom(playerId);
+        const room = rooms.get(roomCode);
+
         const result = handleGameAction(playerId, (room) => {
-            return room.game.extendMeld(playerId, meldId, cardIds);
+            const extendResult = room.game.extendMeld(playerId, meldId, cardIds);
+
+            // Check if pozzetto was taken
+            if (extendResult.success && extendResult.tookPozzetto) {
+                const player = room.players.get(playerId);
+                broadcastToRoom(roomCode, 'playerAction', {
+                    type: 'takePozzetto',
+                    playerNickname: player?.nickname || 'Player',
+                    playerSeat: player?.seat,
+                    cardCount: extendResult.cards
+                });
+            }
+
+            return extendResult;
         });
 
         res.json(result);
@@ -471,8 +503,24 @@ app.post('/api/game/discard', (req, res) => {
             return res.status(401).json({ success: false, reason: 'Invalid session' });
         }
 
+        const roomCode = getPlayerRoom(playerId);
+        const room = rooms.get(roomCode);
+
         const result = handleGameAction(playerId, (room) => {
-            return room.game.discard(playerId, cardId);
+            const discardResult = room.game.discard(playerId, cardId);
+
+            // Check if pozzetto was taken after discarding
+            if (discardResult.success && discardResult.pozzettoInfo) {
+                const player = room.players.get(playerId);
+                broadcastToRoom(roomCode, 'playerAction', {
+                    type: 'takePozzetto',
+                    playerNickname: player?.nickname || 'Player',
+                    playerSeat: player?.seat,
+                    cardCount: discardResult.pozzettoInfo.cards
+                });
+            }
+
+            return discardResult;
         });
 
         res.json(result);
