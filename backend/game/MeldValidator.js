@@ -38,10 +38,27 @@ export function sortSequenceMeld(cards, suit) {
     if (naturals.length >= 2) {
         const firstCard = naturals[0];
         const lastCard = naturals[naturals.length - 1];
-        if (firstCard.rank === 'A' && lastCard.rank === 'K') {
+        const hasAce = naturals.some(c => c.rank === 'A');
+        const hasKing = naturals.some(c => c.rank === 'K');
+        const hasQueen = naturals.some(c => c.rank === 'Q');
+        const hasJack = naturals.some(c => c.rank === 'J');
+        const hasTwo = naturals.some(c => c.rank === '2');
+        const hasThree = naturals.some(c => c.rank === '3');
+
+        // Ace is high if:
+        // 1. We have natural K with Ace
+        // 2. We have Q or J with JOKER (JOKER will act as K)
+        if (hasAce && !hasTwo && !hasThree) {
+            if (hasKing) {
+                aceIsHigh = true;
+            } else if ((hasQueen || hasJack) && wilds.length > 0) {
+                aceIsHigh = true;
+            }
+        }
+
+        if (aceIsHigh && firstCard.rank === 'A') {
             // Move Ace to the end
             naturals.push(naturals.shift());
-            aceIsHigh = true;
         }
     }
 
@@ -54,11 +71,11 @@ export function sortSequenceMeld(cards, suit) {
 
         if (i < naturals.length - 1) {
             // Check for gap to next card
-            const currentRank = getRankIndex(naturals[i].rank);
+            let currentRank = getRankIndex(naturals[i].rank);
             let nextRank = getRankIndex(naturals[i + 1].rank);
 
-            // Handle Ace at end case
-            if (naturals[i + 1].rank === 'A' && naturals[i].rank === 'K') {
+            // Handle Ace at end case - Ace's index should be 13 when it's high
+            if (naturals[i + 1].rank === 'A' && aceIsHigh) {
                 nextRank = 13;
             }
 
@@ -320,11 +337,27 @@ function canFormSequenceWithWild(naturals, wilds, suit) {
     // Check for Ace positioning (can be high or low)
     const hasAce = positions.some(p => p.rank === 'A');
     const hasKing = positions.some(p => p.rank === 'K');
+    const hasQueen = positions.some(p => p.rank === 'Q');
+    const hasJack = positions.some(p => p.rank === 'J');
     const hasTwo = positions.some(p => p.rank === '2');
     const hasThree = positions.some(p => p.rank === '3');
 
+    // Determine if Ace should be high
+    // Ace is high if:
+    // 1. We have natural K, OR
+    // 2. We have Q or J with a JOKER (JOKER will be K)
+    let aceIsHigh = false;
+    if (hasAce && !hasTwo && !hasThree) {
+        if (hasKing) {
+            aceIsHigh = true;
+        } else if ((hasQueen || hasJack) && wilds.length > 0) {
+            // JOKER can act as K between Q and A
+            aceIsHigh = true;
+        }
+    }
+
     // If we have K and A, Ace should be high (idx 13)
-    if (hasAce && hasKing && !hasTwo && !hasThree) {
+    if (aceIsHigh) {
         const acePos = positions.find(p => p.rank === 'A');
         if (acePos) acePos.idx = 13;
         positions.sort((a, b) => a.idx - b.idx);
