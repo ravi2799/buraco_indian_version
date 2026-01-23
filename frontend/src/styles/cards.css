@@ -955,6 +955,27 @@
     }
 }
 
+.action-toast.turn-warning {
+    border: 2px solid rgba(255, 200, 0, 0.9);
+    box-shadow: 0 0 14px rgba(255, 200, 0, 0.35);
+}
+
+.action-toast.turn-warning .toast-icon {
+    animation: turnPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes turnPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.12);
+    }
+}
+
 /* Toast override for pozzetto with special styling */
 .action-toast.pozzetto-special {
     background: linear-gradient(135deg, rgba(139, 69, 19, 0.95) 0%, rgba(184, 134, 11, 0.95) 100%);

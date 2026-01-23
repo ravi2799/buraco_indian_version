@@ -146,7 +146,7 @@ class GameTableUI {
 
         // Close input when clicking outside
         document.addEventListener('click', (e) => {
-            if (!this.chatInputContainer.contains(e.target) && 
+            if (!this.chatInputContainer.contains(e.target) &&
                 !this.chatIconBtn.contains(e.target) &&
                 !this.chatInputContainer.classList.contains('hidden')) {
                 this.chatInputContainer.classList.add('hidden');
@@ -209,6 +209,30 @@ class GameTableUI {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    showTurnWarningToast(data) {
+        // remove existing toast if any
+        const existing = document.querySelector('.action-toast-container');
+        if (existing) existing.remove();
+
+        const container = document.createElement('div');
+        container.className = 'action-toast-container';
+
+        container.innerHTML = `
+          <div class="action-toast turn-warning">
+            <span class="toast-icon">⚠️</span>
+            <div class="toast-text">
+              <span class="player-name">Your turn!</span>
+              <span class="action-desc">Draw a card to start.</span>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(container);
+
+        // keep it a bit longer than normal toasts
+        setTimeout(() => container.remove(), 3000);
     }
 
     /**
@@ -539,6 +563,11 @@ class GameTableUI {
             this.lastCurrentPlayer = currentPlayerNickname;
             if (this.timerEnabled) {
                 this.startTurnTimer(); // Reset timer for new turn
+            }
+
+            // ✅ Only show to the player who just got the turn
+            if (this.gameState.isMyTurn) {
+                this.showTurnWarningToast();
             }
         }
 

@@ -48,20 +48,26 @@ export function getSession(playerId) {
  */
 export function joinRoom(playerId, roomCode, nickname, avatarId) {
     const session = sessions.get(playerId);
-    if (session) {
-        session.roomCode = roomCode;
-        session.nickname = nickname;
-        session.avatarId = avatarId;
-        session.lastSeen = Date.now();
 
-        playerRooms.set(playerId, roomCode);
+    if (!session) return;
 
-        // Add to room's player set
-        if (!roomPlayers.has(roomCode)) {
-            roomPlayers.set(roomCode, new Set());
-        }
-        roomPlayers.get(roomCode).add(playerId);
+    // leave prior room first
+    if (session.roomCode && session.roomCode !== roomCode) {
+        leaveRoom(playerId);
     }
+
+    session.roomCode = roomCode;
+    session.nickname = nickname;
+    session.avatarId = avatarId;
+    session.lastSeen = Date.now();
+
+    playerRooms.set(playerId, roomCode);
+
+    // Add to room's player set
+    if (!roomPlayers.has(roomCode)) {
+        roomPlayers.set(roomCode, new Set());
+    }
+    roomPlayers.get(roomCode).add(playerId);
 }
 
 /**
