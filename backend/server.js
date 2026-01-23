@@ -552,6 +552,50 @@ app.post('/api/game/replace-wild', (req, res) => {
     }
 });
 
+/**
+ * Send a chat message
+ */
+app.post('/api/chat/send', (req, res) => {
+    try {
+        const { playerId, message } = req.body;
+
+        if (!playerId || !getSession(playerId)) {
+            return res.status(401).json({ success: false, reason: 'Invalid session' });
+        }
+
+        if (!message || typeof message !== 'string' || message.trim().length === 0) {
+            return res.json({ success: false, reason: 'Message cannot be empty' });
+        }
+
+        // Limit message length
+        if (message.length > 200) {
+            return res.json({ success: false, reason: 'Message too long (max 200 characters)' });
+        }
+
+        const roomCode = getPlayerRoom(playerId);
+        if (!roomCode) {
+            return res.json({ success: false, reason: 'Not in a room' });
+        }
+
+        const session = getSession(playerId);
+        const nickname = session?.nickname || 'Player';
+
+        // Broadcast chat message to all players in the room
+        broadcastToRoom(roomCode, 'chatMessage', {
+            playerNickname: nickname,
+            message: message.trim(),
+            timestamp: Date.now()
+        });
+
+        console.log(`Chat message from ${nickname} in room ${roomCode}: ${message.trim()}`);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error sending chat message:', err);
+        res.json({ success: false, reason: 'Failed to send message' });
+    }
+});
+
 // Serve frontend index.html for all non-API routes in production
 if (process.env.NODE_ENV === 'production') {
     app.get('*', (req, res) => {

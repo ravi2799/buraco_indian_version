@@ -118,6 +118,11 @@ class GameClient {
                 this.emit('playerAction', data);
             });
 
+            this.eventSource.addEventListener('chatMessage', (e) => {
+                const data = JSON.parse(e.data);
+                this.emit('chatMessage', data);
+            });
+
             // Set a timeout for initial connection
             setTimeout(() => {
                 if (this.eventSource && this.eventSource.readyState === EventSource.CONNECTING) {
@@ -326,6 +331,19 @@ class GameClient {
             wildCardId,
             naturalCardId
         });
+
+        if (response.success) {
+            return response;
+        } else {
+            throw new Error(response.reason);
+        }
+    }
+
+    /**
+     * Send a chat message
+     */
+    async sendChatMessage(message) {
+        const response = await this.postRequest('/api/chat/send', { message });
 
         if (response.success) {
             return response;

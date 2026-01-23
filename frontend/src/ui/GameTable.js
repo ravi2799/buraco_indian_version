@@ -60,10 +60,18 @@ class GameTableUI {
         this.pozzetto1 = document.getElementById('pozzetto-1');
         this.pozzetto2 = document.getElementById('pozzetto-2');
 
+        // Chat elements
+        this.chatIconBtn = document.getElementById('chat-icon-btn');
+        this.chatInputContainer = document.getElementById('chat-input-container');
+        this.chatInput = document.getElementById('chat-input');
+        this.chatSendBtn = document.getElementById('chat-send-btn');
+        this.chatMessagesDisplay = document.getElementById('chat-messages-display');
+
         this.onGameOver = null; // Callback for game end
 
         this.setupEventListeners();
         this.setupDragAndDrop();
+        this.setupChat();
     }
 
     setupEventListeners() {
@@ -103,6 +111,104 @@ class GameTableUI {
         gameClient.on('playerAction', (data) => {
             this.showActionAnimation(data);
         });
+
+        gameClient.on('chatMessage', (data) => {
+            this.addChatMessageDisplay(data.playerNickname, data.message);
+        });
+    }
+
+    /**
+     * Setup chat functionality
+     */
+    setupChat() {
+        // Toggle chat input field
+        this.chatIconBtn.addEventListener('click', () => {
+            this.chatInputContainer.classList.toggle('hidden');
+            if (!this.chatInputContainer.classList.contains('hidden')) {
+                this.chatInput.focus();
+            } else {
+                this.chatInput.value = '';
+            }
+        });
+
+        // Send message on button click
+        this.chatSendBtn.addEventListener('click', () => {
+            this.sendChatMessage();
+        });
+
+        // Send message on Enter key
+        this.chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendChatMessage();
+            }
+        });
+
+        // Close input when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.chatInputContainer.contains(e.target) && 
+                !this.chatIconBtn.contains(e.target) &&
+                !this.chatInputContainer.classList.contains('hidden')) {
+                this.chatInputContainer.classList.add('hidden');
+                this.chatInput.value = '';
+            }
+        });
+    }
+
+    /**
+     * Send a chat message
+     */
+    async sendChatMessage() {
+        const message = this.chatInput.value.trim();
+        if (!message) return;
+
+        try {
+            await gameClient.sendChatMessage(message);
+            this.chatInput.value = '';
+            this.chatInputContainer.classList.add('hidden');
+            // Message will appear via SSE event
+        } catch (err) {
+            console.error('Failed to send chat message:', err);
+            alert('Failed to send message: ' + err.message);
+        }
+    }
+
+    /**
+     * Add a chat message to the display (above chat icon)
+     */
+    addChatMessageDisplay(playerNickname, message) {
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message-item';
+        messageEl.innerHTML = `
+            <div class="chat-message-username-minimal">${this.escapeHtml(playerNickname)}</div>
+            <div class="chat-message-text-minimal">${this.escapeHtml(message)}</div>
+        `;
+
+        // Add to display
+        this.chatMessagesDisplay.appendChild(messageEl);
+
+        // Limit to 3 messages
+        const messages = this.chatMessagesDisplay.querySelectorAll('.chat-message-item');
+        if (messages.length > 3) {
+            // Remove the oldest message
+            messages[0].remove();
+        }
+
+        // Remove message after animation completes (4s visible + 0.5s fade = 4.5s total)
+        setTimeout(() => {
+            if (messageEl.parentNode) {
+                messageEl.remove();
+            }
+        }, 4500);
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**

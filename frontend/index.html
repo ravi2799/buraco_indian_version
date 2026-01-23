@@ -260,6 +260,22 @@
           <div id="my-player-badge" class="my-badge-container"></div>
         </div>
 
+        <!-- Chat Messages Display (above icon) -->
+        <div id="chat-messages-display" class="chat-messages-display"></div>
+
+        <!-- Chat Input (appears to the right of icon when clicked) -->
+        <div id="chat-input-container" class="chat-input-container-minimal hidden">
+          <div class="chat-input-wrapper">
+            <input type="text" id="chat-input" class="chat-input-minimal" placeholder="Type a message..." maxlength="200" autocomplete="off">
+            <button id="chat-send-btn" class="chat-send-btn-minimal">→</button>
+          </div>
+        </div>
+
+        <!-- Chat Icon -->
+        <button id="chat-icon-btn" class="chat-icon-btn" title="Open Chat">
+          💬
+        </button>
+
         <!-- Hidden action buttons (actions triggered via drag/click) -->
         <div class="action-bar hidden">
           <button id="draw-btn" class="action-btn" disabled>Draw Card</button>
